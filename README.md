@@ -44,7 +44,7 @@ nimble install unicorn
 ### 3. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/nimguard.git
+git clone https://github.com/will-bates11/nimguard.git
 cd nimguard
 ```
 
