@@ -239,19 +239,55 @@ proc main() =
       of "trace":
         trace = true
       of "rules":
-        ruleFile = p.val
+        if p.val != "":
+          ruleFile = p.val
+        else:
+          p.next()
+          if p.kind == cmdArgument: ruleFile = p.key
+          else:
+            echo "Error: --rules requires a file path."
+            return
       of "output":
-        outputPath = p.val
+        if p.val != "":
+          outputPath = p.val
+        else:
+          p.next()
+          if p.kind == cmdArgument: outputPath = p.key
+          else:
+            echo "Error: --output requires a file path."
+            return
       of "attach":
+        let attachVal = if p.val != "": p.val
+                        else:
+                          p.next()
+                          if p.kind == cmdArgument: p.key
+                          else:
+                            echo "Error: --attach requires an integer PID."
+                            return
+                            ""
         try:
-          attachPid = parseInt(p.val)
+          attachPid = parseInt(attachVal)
         except:
           echo "Error: --attach requires an integer PID."
           return
       of "inject":
-        injectSpec = p.val
+        if p.val != "":
+          injectSpec = p.val
+        else:
+          p.next()
+          if p.kind == cmdArgument: injectSpec = p.key
+          else:
+            echo "Error: --inject requires <addr>:<hex> value."
+            return
       of "breakpoint":
-        bpAddrStr = p.val
+        if p.val != "":
+          bpAddrStr = p.val
+        else:
+          p.next()
+          if p.kind == cmdArgument: bpAddrStr = p.key
+          else:
+            echo "Error: --breakpoint requires an address."
+            return
       else:
         echo "Unknown option: --", p.key
         showHelp()

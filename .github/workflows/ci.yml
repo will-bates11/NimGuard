@@ -60,7 +60,7 @@ jobs:
         run: echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
 
       - name: Build NimGuard
-        run: nim c -d:release --path:src -o:nimguard src/main.nim
+        run: nim c -d:release --path:src -o:nimguard src/nimguard.nim
 
       - name: Run patcher tests
         run: nim c -r --path:src tests/test_patcher.nim
@@ -103,7 +103,7 @@ jobs:
           nim-version: 'stable'
 
       - name: Build NimGuard
-        run: nim c -d:release --path:src -o:nimguard.exe src/main.nim
+        run: nim c -d:release --path:src -o:nimguard.exe src/nimguard.nim
 
       # Binary parsing is pure Nim with no C library dependencies.
       - name: Run binary parsing tests

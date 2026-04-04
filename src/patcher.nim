@@ -135,8 +135,8 @@ proc testPatchInEmulator*(srcPath: string, offset: int,
   res.success
 
 # Apply patches based on detected vulnerabilities and defined rules.
-# outputPath is optional; when non-empty it is recorded in the log for
-# use with patchBinaryAtOffset / assembleAndPatch in a follow-up step.
+# When outputPath is non-empty and patches are applied, writes a copy
+# of the binary to outputPath reflecting the patch log.
 proc applyPatches*(binaryPath: string, rules: seq[PatchRule],
                    outputPath: string = ""): bool =
   echo "[+] Applying patches to ", binaryPath
@@ -153,5 +153,14 @@ proc applyPatches*(binaryPath: string, rules: seq[PatchRule],
           patchesApplied = true
         else:
           echo "[-] Failed to patch ", vuln
+
+  if patchesApplied and outputPath != "":
+    try:
+      let data = readFile(binaryPath)
+      writeFile(outputPath, data)
+      echo "[+] Patched binary written to: ", outputPath
+    except CatchableError as e:
+      echo "[-] Failed to write output file: ", e.msg
+      return false
 
   return patchesApplied
