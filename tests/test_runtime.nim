@@ -134,7 +134,7 @@ when defined(linux):
       let (bp, br) = injectBreakpoint(int(pid), regs.rip)
       require br.success
 
-      let rr2 = removeBreakpoint(int(pid), bp)
+      let rr2 = runtime.removeBreakpoint(int(pid), bp)
       check rr2.success
 
       let (restored, mr2) = process.readProcessMemory(int(pid), regs.rip, 1)
