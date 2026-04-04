@@ -65,9 +65,9 @@ suite "WinRuntime Module - Platform":
 
   test "allocateRemoteMemory returns failure on non-Windows":
     when not defined(windows):
-      let (addr_, r) = winruntime.allocateRemoteMemory(1, 4096)
+      let (remoteAddr, r) = winruntime.allocateRemoteMemory(1, 4096)
       check r.success == false
-      check addr_ == 0'u64
+      check remoteAddr == 0'u64
     else:
       check true
 
@@ -83,9 +83,9 @@ when defined(windows):
     test "patchProcessMemory writes bytes into self":
       let selfPid = int(os.getCurrentProcessId())
       var target: array[4, byte] = [0x00'u8, 0x00, 0x00, 0x00]
-      let addr_ = cast[uint64](addr target[0])
+      let remoteAddr = cast[uint64](addr target[0])
       let patch = @[0xDE'u8, 0xAD'u8, 0xBE'u8, 0xEF'u8]
-      let wr = winruntime.patchProcessMemory(selfPid, addr_, patch)
+      let wr = winruntime.patchProcessMemory(selfPid, remoteAddr, patch)
       check wr.success
       check target[0] == 0xDE'u8
       check target[1] == 0xAD'u8
@@ -95,8 +95,8 @@ when defined(windows):
     test "injectBreakpoint injects INT3 into self data buffer":
       let selfPid = int(os.getCurrentProcessId())
       var dataBuf: array[4, byte] = [0x90'u8, 0x90, 0x90, 0x90]
-      let addr_ = cast[uint64](addr dataBuf[0])
-      let (bp, br) = winruntime.injectBreakpoint(selfPid, addr_)
+      let remoteAddr = cast[uint64](addr dataBuf[0])
+      let (bp, br) = winruntime.injectBreakpoint(selfPid, remoteAddr)
       check br.success
       check bp.active
       check dataBuf[0] == 0xCC'u8
@@ -106,9 +106,9 @@ when defined(windows):
     test "removeBreakpoint restores original byte":
       let selfPid = int(os.getCurrentProcessId())
       var dataBuf: array[4, byte] = [0x42'u8, 0x43, 0x44, 0x45]
-      let addr_ = cast[uint64](addr dataBuf[0])
+      let remoteAddr = cast[uint64](addr dataBuf[0])
       let origByte = dataBuf[0]
-      let (bp, br) = winruntime.injectBreakpoint(selfPid, addr_)
+      let (bp, br) = winruntime.injectBreakpoint(selfPid, remoteAddr)
       require br.success
       let rr = winruntime.removeBreakpoint(selfPid, bp)
       check rr.success
@@ -140,14 +140,14 @@ when defined(windows):
 
     test "allocateRemoteMemory allocates a page in self":
       let selfPid = int(os.getCurrentProcessId())
-      let (addr_, ar) = winruntime.allocateRemoteMemory(selfPid, 4096)
+      let (remoteAddr, ar) = winruntime.allocateRemoteMemory(selfPid, 4096)
       check ar.success
-      check addr_ != 0'u64
+      check remoteAddr != 0'u64
       # Write and read back to confirm allocation is usable.
       let patch = @[0x11'u8, 0x22'u8, 0x33'u8]
-      let wr = winruntime.patchProcessMemory(selfPid, addr_, patch)
+      let wr = winruntime.patchProcessMemory(selfPid, remoteAddr, patch)
       check wr.success
-      let (readBack, rr) = winprocess.readProcessMemory(selfPid, addr_, 3)
+      let (readBack, rr) = winprocess.readProcessMemory(selfPid, remoteAddr, 3)
       check rr.success
       check readBack.len == 3
       check readBack[0] == 0x11'u8

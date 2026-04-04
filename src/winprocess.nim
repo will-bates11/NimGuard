@@ -102,9 +102,9 @@ when defined(windows):
     OUTPUT_DEBUG_STRING_EVENT*   = DWORD(8)
   let INVALID_HANDLE_VALUE* = cast[HANDLE](cast[int](-1))
 
-  # THREADENTRY32 for CreateToolhelp32Snapshot / Thread32First / Thread32Next.
+  # NimThreadEntry32 for CreateToolhelp32Snapshot / Thread32First / Thread32Next.
   type
-    THREADENTRY32 {.pure.} = object
+    NimThreadEntry32 {.pure.} = object
       dwSize:             DWORD
       cntUsage:           DWORD
       th32ThreadID:       DWORD
@@ -118,7 +118,7 @@ when defined(windows):
   # mandatory header fields. Using a flat byte buffer avoids the complex
   # union layout; register offsets are derived from the Windows SDK spec.
   type
-    CONTEXT64 {.pure.} = object
+    NimContext64 {.pure.} = object
       P1Home:          uint64  # offset 0
       P2Home:          uint64  # offset 8
       P3Home:          uint64  # offset 16
@@ -161,9 +161,10 @@ when defined(windows):
       # Total CONTEXT size = 1232; fields above = 256; padding = 976.
       padding:         array[976, byte]
 
-  # DEBUG_EVENT structure (simplified union layout).
+  # NimDebugEvent: our own debug event record. Named to avoid clashing with
+  # any winlean-provided DEBUG_EVENT symbol.
   type
-    EXCEPTION_RECORD {.pure.} = object
+    NimWinExcRecord {.pure.} = object
       ExceptionCode:    DWORD
       ExceptionFlags:   DWORD
       pExceptionRecord: pointer
@@ -171,11 +172,11 @@ when defined(windows):
       NumberParameters: DWORD
       ExceptionInformation: array[15, uint64]
 
-    EXCEPTION_DEBUG_INFO {.pure.} = object
-      ExceptionRecord: EXCEPTION_RECORD
+    NimWinExcDebugInfo {.pure.} = object
+      ExceptionRecord: NimWinExcRecord
       dwFirstChance:   DWORD
 
-    DEBUG_EVENT {.pure.} = object
+    NimDebugEvent {.pure.} = object
       dwDebugEventCode: DWORD
       dwProcessId:      DWORD
       dwThreadId:       DWORD
@@ -225,21 +226,21 @@ when defined(windows):
   proc ResumeThread(hThread: HANDLE): DWORD
     {.importc: "ResumeThread", dynlib: "kernel32", stdcall.}
 
-  proc GetThreadContext(hThread: HANDLE, lpContext: ptr CONTEXT64): BOOL
+  proc GetThreadContext(hThread: HANDLE, lpContext: ptr NimContext64): BOOL
     {.importc: "GetThreadContext", dynlib: "kernel32", stdcall.}
 
-  proc SetThreadContext(hThread: HANDLE, lpContext: ptr CONTEXT64): BOOL
+  proc SetThreadContext(hThread: HANDLE, lpContext: ptr NimContext64): BOOL
     {.importc: "SetThreadContext", dynlib: "kernel32", stdcall.}
 
   proc CreateToolhelp32Snapshot(dwFlags: DWORD, th32ProcessID: DWORD): HANDLE
     {.importc: "CreateToolhelp32Snapshot", dynlib: "kernel32", stdcall.}
 
   proc Thread32First(hSnapshot: HANDLE,
-                     lpte: ptr THREADENTRY32): BOOL
+                     lpte: ptr NimThreadEntry32): BOOL
     {.importc: "Thread32First", dynlib: "kernel32", stdcall.}
 
   proc Thread32Next(hSnapshot: HANDLE,
-                    lpte: ptr THREADENTRY32): BOOL
+                    lpte: ptr NimThreadEntry32): BOOL
     {.importc: "Thread32Next", dynlib: "kernel32", stdcall.}
 
   proc DebugActiveProcess(dwProcessId: DWORD): BOOL
@@ -248,7 +249,7 @@ when defined(windows):
   proc DebugActiveProcessStop(dwProcessId: DWORD): BOOL
     {.importc: "DebugActiveProcessStop", dynlib: "kernel32", stdcall.}
 
-  proc WaitForDebugEvent(lpDebugEvent: ptr DEBUG_EVENT,
+  proc WaitForDebugEvent(lpDebugEvent: ptr NimDebugEvent,
                          dwMilliseconds: DWORD): BOOL
     {.importc: "WaitForDebugEvent", dynlib: "kernel32", stdcall.}
 
@@ -330,8 +331,8 @@ when defined(windows):
       return (@[], wpErr(wpEnum, "pid=" & $pid &
                " err=" & $GetLastError()))
     defer: discard CloseHandle(snap)
-    var entry: THREADENTRY32
-    entry.dwSize = DWORD(sizeof(THREADENTRY32))
+    var entry: NimThreadEntry32
+    entry.dwSize = DWORD(sizeof(NimThreadEntry32))
     var threads: seq[int]
     if Thread32First(snap, addr entry) == BOOL(0):
       return (@[], wpErr(wpEnum, "Thread32First failed"))
@@ -368,7 +369,7 @@ when defined(windows):
       return (WinRegisters(), wpErr(wpGetCtx,
                "tid=" & $tid & " err=" & $GetLastError()))
     defer: discard CloseHandle(h)
-    var ctx: CONTEXT64
+    var ctx: NimContext64
     ctx.ContextFlags = CONTEXT_FULL
     if GetThreadContext(h, addr ctx) == BOOL(0):
       return (WinRegisters(), wpErr(wpGetCtx,
@@ -401,7 +402,7 @@ when defined(windows):
       return wpErr(wpSetCtx, "tid=" & $tid & " err=" & $GetLastError())
     defer: discard CloseHandle(h)
     # Read existing context to preserve non-general-purpose fields.
-    var ctx: CONTEXT64
+    var ctx: NimContext64
     ctx.ContextFlags = CONTEXT_FULL
     if GetThreadContext(h, addr ctx) == BOOL(0):
       return wpErr(wpGetCtx, "read before set, tid=" & $tid)
@@ -461,7 +462,7 @@ when defined(windows):
   # Wait for the next debug event from any attached process.
   # timeoutMs: milliseconds to wait; use high value (e.g. 5000) to block.
   proc waitForDebugEvent*(timeoutMs: int): (DebugEvent, WinProcessResult) =
-    var de: DEBUG_EVENT
+    var de: NimDebugEvent
     if WaitForDebugEvent(addr de, DWORD(timeoutMs)) == BOOL(0):
       return (DebugEvent(), wpErr(wpDebugEvent,
                "err=" & $GetLastError()))

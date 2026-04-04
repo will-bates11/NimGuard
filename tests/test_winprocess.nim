@@ -84,10 +84,10 @@ suite "WinProcess Module - Platform":
       check r.error == wpPlatform
 
     test "allocateRemoteMemory returns platform error on non-Windows":
-      let (addr_, r) = winprocess.allocateRemoteMemory(1, 4096)
+      let (remoteAddr, r) = winprocess.allocateRemoteMemory(1, 4096)
       check r.success == false
       check r.error == wpPlatform
-      check addr_ == 0'u64
+      check remoteAddr == 0'u64
 
     test "readProcessMemory returns error for size zero":
       let (_, r) = winprocess.readProcessMemory(1, 0x1000'u64, 0)
@@ -124,9 +124,9 @@ when defined(windows):
       # Allocate a small buffer in this process to read/write.
       var testBuf: array[8, byte] = [0xAA'u8, 0xBB, 0xCC, 0xDD,
                                      0x11, 0x22, 0x33, 0x44]
-      let addr_ = cast[uint64](addr testBuf[0])
+      let remoteAddr = cast[uint64](addr testBuf[0])
       # Read back what we just set.
-      let (readBytes, rr) = winprocess.readProcessMemory(selfPid, addr_, 8)
+      let (readBytes, rr) = winprocess.readProcessMemory(selfPid, remoteAddr, 8)
       check rr.success
       check readBytes.len == 8
       check readBytes[0] == 0xAA'u8
@@ -135,9 +135,9 @@ when defined(windows):
     test "writeProcessMemory writes bytes to self":
       let selfPid = int(os.getCurrentProcessId())
       var target: array[4, byte] = [0x00'u8, 0x00, 0x00, 0x00]
-      let addr_ = cast[uint64](addr target[0])
+      let remoteAddr = cast[uint64](addr target[0])
       let patch = @[0x11'u8, 0x22'u8, 0x33'u8, 0x44'u8]
-      let wr = winprocess.writeProcessMemory(selfPid, addr_, patch)
+      let wr = winprocess.writeProcessMemory(selfPid, remoteAddr, patch)
       check wr.success
       check target[0] == 0x11'u8
       check target[1] == 0x22'u8
@@ -154,12 +154,12 @@ when defined(windows):
       let selfPid = int(os.getCurrentProcessId())
       # Use a small data buffer as the target address (not actual code).
       var dataBuf: array[4, byte] = [0x90'u8, 0x90, 0x90, 0x90]
-      let addr_ = cast[uint64](addr dataBuf[0])
+      let remoteAddr = cast[uint64](addr dataBuf[0])
       let origByte = dataBuf[0]
-      let (bp, br) = winprocess.setBreakpoint(selfPid, addr_)
+      let (bp, br) = winprocess.setBreakpoint(selfPid, remoteAddr)
       check br.success
       check bp.active
-      check bp.address == addr_
+      check bp.address == remoteAddr
       check bp.originalByte == origByte
       # Verify INT3 was written.
       check dataBuf[0] == 0xCC'u8

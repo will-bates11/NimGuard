@@ -85,10 +85,10 @@ proc hookFunction*(pid: int, address: uint64,
 # ---------------------------------------------------------------------------
 
 proc allocateRemoteMemory*(pid: int, size: int): (uint64, WinRuntimeResult) =
-  let (addr_, pr) = winprocess.allocateRemoteMemory(pid, size)
+  let (remoteAddr, pr) = winprocess.allocateRemoteMemory(pid, size)
   if not pr.success:
     return (0'u64, rtErr("allocateRemoteMemory: " & pr.msg))
-  return (addr_, rtOk())
+  return (remoteAddr, rtOk())
 
 # ---------------------------------------------------------------------------
 # Disassembly at a live process address.
