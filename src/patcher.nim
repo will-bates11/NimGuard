@@ -1,27 +1,44 @@
 # NimGuard - Binary Analysis and Dynamic Patching
-import rules, binary
+import rules, binary, disassembler
 
 type
   BinaryAnalysis* = object
-    filePath*:     string
-    format*:       BinaryFormat
-    architecture*: Architecture
-    entryPoint*:   uint64
-    sections*:     seq[Section]
+    filePath*:        string
+    format*:          BinaryFormat
+    architecture*:    Architecture
+    entryPoint*:      uint64
+    sections*:        seq[Section]
     vulnerabilities*: seq[string]
 
-# Analyze a binary file and return structured metadata plus candidate
-# vulnerability sites. Vulnerability detection is stubbed until Phase 2
-# integrates Capstone disassembly.
+# Analyze a binary file and return structured metadata plus detected
+# vulnerability sites. Uses Capstone disassembly (when available) to
+# find calls to dangerous functions, and also scans the binary string
+# table for imported dangerous symbol names.
 proc analyzeBinary*(filePath: string): BinaryAnalysis =
   let info = parseBinary(filePath)
-  result.filePath     = info.filePath
+  result.filePath     = filePath
   result.format       = info.format
   result.architecture = info.architecture
   result.entryPoint   = info.entryPoint
   result.sections     = info.sections
-  # TODO Phase 2: replace with real Capstone-based pattern matching
-  result.vulnerabilities = @["checkAuth", "handleUserInput"]
+
+  if info.format == bfUnknown or info.rawBytes.len == 0:
+    result.vulnerabilities = @[]
+    return
+
+  # Disassemble the executable section and look for dangerous calls.
+  let textSectionName = ".text"
+  let instructions = disassembleSection(info, textSectionName)
+  var found = findDangerousCalls(instructions)
+
+  # Also scan the binary's string data for imported dangerous symbol names.
+  # This catches PLT imports that are not symbolically resolved during
+  # disassembly.
+  for name in scanImportStrings(info):
+    if name notin found:
+      found.add(name)
+
+  result.vulnerabilities = found
 
 # Simulated patch application (to be replaced with Keystone in Phase 3).
 proc applyPatch*(binaryPath: string, functionName: string, patch: string): bool =

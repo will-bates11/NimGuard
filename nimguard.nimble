@@ -1,6 +1,6 @@
 # NimGuard - Dynamic Binary Patching & Instrumentation Tool
 
-version       = "0.1.0"
+version       = "0.2.0"
 author        = "William Bates"
 description   = "Dynamic binary patching and instrumentation tool for legacy systems."
 license       = "MIT"
@@ -9,19 +9,26 @@ srcDir        = "src"
 # Specify required Nim version
 requires "nim >= 1.6.0"
 
-# External C library dependencies (must be installed at the OS level):
-#   Capstone:  https://www.capstone-engine.org/
-#   Keystone:  https://www.keystone-engine.org/
-#   Unicorn:   https://www.unicorn-engine.org/
-# Nim FFI wrappers for these libraries will be added in Phase 2.
+# No external Nim packages are required. Capstone integration uses Nim FFI
+# (src/bindings/capstone.nim) to bind directly to the system-installed C library.
+#
+# System-level C library dependencies (must be installed at the OS level):
+#   Capstone (Phase 2, disassembly):
+#     Linux:   sudo apt-get install libcapstone-dev
+#     macOS:   brew install capstone
+#     Windows: download capstone.dll from https://www.capstone-engine.org/
+#
+#   Keystone (Phase 3, assembly/patching):   https://www.keystone-engine.org/
+#   Unicorn  (Phase 4, emulation):           https://www.unicorn-engine.org/
 
-# Include directories for external bindings (modify if needed)
+# Include directories for external bindings
 installDirs = @["src"]
 
 # Testing
 task test, "Run unit tests":
   exec "nim c -r --path:src tests/test_patcher.nim"
   exec "nim c -r --path:src tests/test_binary.nim"
+  exec "nim c -r --path:src tests/test_disassembler.nim"
 
 # Custom build task
 task build, "Compile NimGuard":
