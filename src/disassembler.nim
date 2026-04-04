@@ -1,5 +1,6 @@
 # NimGuard - Disassembly module backed by Capstone.
 # Provides higher-level types and procedures over the raw FFI bindings.
+import strutils
 import binary
 import bindings/capstone
 
