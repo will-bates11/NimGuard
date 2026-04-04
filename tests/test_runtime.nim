@@ -55,6 +55,10 @@ suite "Runtime Module - Platform":
 when defined(linux):
   import posix
 
+  # Use _exit() in child branches so Nim's atexit/unittest handlers do not
+  # run in the forked child and corrupt the parent's exit code.
+  proc rawExit(code: cint) {.importc: "_exit", header: "<unistd.h>", noreturn.}
+
   proc spawnTracedChild(): Pid =
     let pid = fork()
     if pid == Pid(0):
@@ -171,7 +175,7 @@ when defined(linux):
         discard posix.kill(posix.getpid(), SIGSTOP)
         # write(1, "x", 1) - syscall number 1 on x86-64 Linux.
         discard posix.write(FileHandle(1), cstring("x"), 1)
-        quit(0)
+        rawExit(0)
 
       defer: reapChild(pid)
 

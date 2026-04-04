@@ -1,6 +1,6 @@
 # NimGuard - Dynamic Binary Patching and Instrumentation Tool
 import parseopt, strutils, patcher, instrumentation, rules, binary, disassembler,
-       emulator, process, runtime
+       emulator, runtime
 
 proc showHelp() =
   echo """
@@ -19,7 +19,7 @@ proc showHelp() =
     --emulate           Run the .text section through the CPU emulator
     --test-patch        Test a NOP patch at offset 0 in the emulator before applying
 
-  Runtime instrumentation options (require --attach, Linux only):
+  Runtime instrumentation options (require --attach, Linux and Windows):
     --attach <pid>      Attach to a running process by PID
     --inject <addr>:<hex>  Write hex bytes into process memory at hex address
     --breakpoint <addr> Set a software breakpoint at hex address
@@ -146,8 +146,8 @@ proc parseHexBytes(s: string): seq[byte] =
 
 proc runAttachMode(pid: int, injectSpec: string, bpAddrStr: string,
                    trace: bool) =
-  if not isPtraceAvailable():
-    echo "[-] ptrace is not available on this platform."
+  if not isRuntimeAvailable():
+    echo "[-] Live process instrumentation is not available on this platform."
     return
 
   echo "[+] Attaching to PID ", pid, "..."

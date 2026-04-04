@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build-and-test:
+  build-and-test-linux:
     runs-on: ubuntu-latest
 
     steps:
@@ -82,3 +82,36 @@ jobs:
 
       - name: Run runtime tests
         run: nim c -r --path:src tests/test_runtime.nim
+
+      - name: Run winprocess tests (stubs)
+        run: nim c -r --path:src tests/test_winprocess.nim
+
+      - name: Run winruntime tests (stubs)
+        run: nim c -r --path:src tests/test_winruntime.nim
+
+  build-and-test-windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Nim
+        uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: 'stable'
+
+      - name: Build NimGuard
+        run: nim c -d:release --path:src -o:nimguard.exe src/main.nim
+
+      # Binary parsing is pure Nim with no C library dependencies.
+      - name: Run binary parsing tests
+        run: nim c -r --path:src tests/test_binary.nim
+
+      # Windows-specific instrumentation tests.
+      - name: Run winprocess tests
+        run: nim c -r --path:src tests/test_winprocess.nim
+
+      - name: Run winruntime tests
+        run: nim c -r --path:src tests/test_winruntime.nim

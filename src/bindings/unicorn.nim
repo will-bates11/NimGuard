@@ -1,14 +1,12 @@
 # NimGuard - Thin FFI wrapper for the Unicorn CPU emulator library.
-# Exposes the subset of the Unicorn C API needed for NimGuard:
-#   uc_open, uc_close, uc_mem_map, uc_mem_write, uc_mem_read,
-#   uc_reg_write, uc_reg_read, uc_emu_start, uc_emu_stop,
-#   uc_hook_add, uc_hook_del.
-# Architecture/mode constants, register IDs, memory permissions, hook types.
+# Uses manual lazy loading (loadLib/symAddr) so the library is optional:
+# if it is absent the wrapper procs return error values rather than crashing.
 #
 # System dependency: libunicorn must be installed at the OS level.
 #   Linux:   sudo apt-get install libunicorn-dev
 #   macOS:   brew install unicorn
 #   Windows: download unicorn.dll from https://www.unicorn-engine.org/
+import dynlib
 
 when defined(windows):
   const unicornDynlib* = "unicorn.dll"
@@ -19,42 +17,43 @@ else:
 
 # Architecture constants (uc_arch enum values from unicorn.h).
 const
-  UC_ARCH_ARM*   = 1.cint   # ARM (including Thumb)
-  UC_ARCH_ARM64* = 2.cint   # AArch64
-  UC_ARCH_X86*   = 4.cint   # x86 and x86-64
+  UC_ARCH_ARM*   = 1.cint
+  UC_ARCH_ARM64* = 2.cint
+  UC_ARCH_X86*   = 4.cint
 
 # Mode constants (uc_mode enum bit flags from unicorn.h).
 const
-  UC_MODE_LITTLE_ENDIAN* = 0.cint         # little-endian (default)
-  UC_MODE_ARM*           = 0.cint         # 32-bit ARM
-  UC_MODE_THUMB*         = (1 shl 4).cint # ARM Thumb mode
-  UC_MODE_16*            = (1 shl 1).cint # x86 16-bit
-  UC_MODE_32*            = (1 shl 2).cint # x86 32-bit
-  UC_MODE_64*            = (1 shl 3).cint # x86 64-bit
+  UC_MODE_LITTLE_ENDIAN* = 0.cint
+  UC_MODE_ARM*           = 0.cint
+  UC_MODE_THUMB*         = (1 shl 4).cint
+  UC_MODE_16*            = (1 shl 1).cint
+  UC_MODE_32*            = (1 shl 2).cint
+  UC_MODE_64*            = (1 shl 3).cint
 
 # Error codes (uc_err enum values from unicorn.h).
 const
-  UC_ERR_OK* = 0.cint  # No error
+  UC_ERR_OK*   = 0.cint
+  UC_ERR_ARCH* = 9.cint  # Returned when the library cannot be loaded.
 
-# Memory permission flags (from unicorn.h).
+# Memory permission flags.
 const
-  UC_PROT_NONE*  = 0.cuint  # no permissions
-  UC_PROT_READ*  = 1.cuint  # read permission
-  UC_PROT_WRITE* = 2.cuint  # write permission
-  UC_PROT_EXEC*  = 4.cuint  # execute permission
-  UC_PROT_ALL*   = 7.cuint  # read + write + execute
+  UC_PROT_NONE*  = 0.cuint
+  UC_PROT_READ*  = 1.cuint
+  UC_PROT_WRITE* = 2.cuint
+  UC_PROT_EXEC*  = 4.cuint
+  UC_PROT_ALL*   = 7.cuint
 
-# Hook type flags (uc_hook_type enum from unicorn.h).
+# Hook type flags.
 const
-  UC_HOOK_INTR*               = (1 shl 0).cint  # interrupt/exception event
-  UC_HOOK_CODE*               = (1 shl 2).cint  # instruction executed
-  UC_HOOK_BLOCK*              = (1 shl 3).cint  # basic block entered
-  UC_HOOK_MEM_READ_UNMAPPED*  = (1 shl 4).cint  # read from unmapped memory
-  UC_HOOK_MEM_WRITE_UNMAPPED* = (1 shl 5).cint  # write to unmapped memory
-  UC_HOOK_MEM_READ*           = (1 shl 10).cint # memory read
-  UC_HOOK_MEM_WRITE*          = (1 shl 11).cint # memory write
+  UC_HOOK_INTR*               = (1 shl 0).cint
+  UC_HOOK_CODE*               = (1 shl 2).cint
+  UC_HOOK_BLOCK*              = (1 shl 3).cint
+  UC_HOOK_MEM_READ_UNMAPPED*  = (1 shl 4).cint
+  UC_HOOK_MEM_WRITE_UNMAPPED* = (1 shl 5).cint
+  UC_HOOK_MEM_READ*           = (1 shl 10).cint
+  UC_HOOK_MEM_WRITE*          = (1 shl 11).cint
 
-# x86 register IDs (uc_x86_reg enum from unicorn/x86.h).
+# x86 register IDs.
 const
   UC_X86_REG_AX*     =  3.cint
   UC_X86_REG_BX*     =  8.cint
@@ -80,74 +79,121 @@ const
   UC_X86_REG_RSI*    = 43.cint
   UC_X86_REG_RSP*    = 44.cint
 
-# Opaque engine type. Unicorn uses uc_engine* as the working handle.
-# Declared as an incomplete object so Nim never attempts to copy it.
+# Opaque engine type.
 type UcEngine* = object
 
 # Hook handle type (uc_hook is size_t in C).
 type UcHook* = csize_t
 
-# Callback proc type for UC_HOOK_CODE hooks (fires on every instruction).
-# Matches the C signature:
-#   void cb(uc_engine *uc, uint64_t address, uint32_t size, void *user_data)
+# Callback proc type for UC_HOOK_CODE hooks.
 type UcCodeHookCb* = proc(uc: ptr UcEngine, address: uint64, size: uint32,
                           userData: pointer) {.cdecl.}
 
-# uc_open: initialise a Unicorn engine handle for the given arch and mode.
-# Writes the new handle into *uc. Returns UC_ERR_OK on success.
-proc uc_open*(arch: cint, mode: cint, uc: ptr ptr UcEngine): cint
-  {.importc: "uc_open", dynlib: unicornDynlib.}
+# ---------------------------------------------------------------------------
+# Lazy library loader.
+# ---------------------------------------------------------------------------
 
-# uc_close: destroy a Unicorn engine handle and release all resources.
-proc uc_close*(uc: ptr UcEngine): cint
-  {.importc: "uc_close", dynlib: unicornDynlib.}
+type
+  UcOpenFn      = proc(arch: cint, mode: cint, uc: ptr ptr UcEngine): cint {.cdecl.}
+  UcCloseFn     = proc(uc: ptr UcEngine): cint {.cdecl.}
+  UcMemMapFn    = proc(uc: ptr UcEngine, address: uint64,
+                       size: csize_t, perms: cuint): cint {.cdecl.}
+  UcMemWriteFn  = proc(uc: ptr UcEngine, address: uint64,
+                       bytes: pointer, size: csize_t): cint {.cdecl.}
+  UcMemReadFn   = proc(uc: ptr UcEngine, address: uint64,
+                       bytes: pointer, size: csize_t): cint {.cdecl.}
+  UcRegWriteFn  = proc(uc: ptr UcEngine, regid: cint,
+                       value: pointer): cint {.cdecl.}
+  UcRegReadFn   = proc(uc: ptr UcEngine, regid: cint,
+                       value: pointer): cint {.cdecl.}
+  UcEmuStartFn  = proc(uc: ptr UcEngine, begin: uint64, until: uint64,
+                       timeout: uint64, count: csize_t): cint {.cdecl.}
+  UcEmuStopFn   = proc(uc: ptr UcEngine): cint {.cdecl.}
+  UcHookAddFn   = proc(uc: ptr UcEngine, hh: ptr UcHook, hookType: cint,
+                       callback: pointer, userData: pointer,
+                       begin: uint64, `end`: uint64): cint {.cdecl.}
+  UcHookDelFn   = proc(uc: ptr UcEngine, hh: UcHook): cint {.cdecl.}
 
-# uc_mem_map: map a memory region into the emulated address space.
-# address must be 4 KB aligned. size must be a multiple of 4 KB.
+var ucLib:         LibHandle
+var ucOpenPtr:     UcOpenFn
+var ucClosePtr:    UcCloseFn
+var ucMemMapPtr:   UcMemMapFn
+var ucMemWritePtr: UcMemWriteFn
+var ucMemReadPtr:  UcMemReadFn
+var ucRegWritePtr: UcRegWriteFn
+var ucRegReadPtr:  UcRegReadFn
+var ucEmuStartPtr: UcEmuStartFn
+var ucEmuStopPtr:  UcEmuStopFn
+var ucHookAddPtr:  UcHookAddFn
+var ucHookDelPtr:  UcHookDelFn
+
+proc ucLoad(): bool =
+  if ucLib != nil: return true
+  ucLib = loadLib(unicornDynlib)
+  if ucLib == nil: return false
+  ucOpenPtr     = cast[UcOpenFn](symAddr(ucLib, "uc_open"))
+  ucClosePtr    = cast[UcCloseFn](symAddr(ucLib, "uc_close"))
+  ucMemMapPtr   = cast[UcMemMapFn](symAddr(ucLib, "uc_mem_map"))
+  ucMemWritePtr = cast[UcMemWriteFn](symAddr(ucLib, "uc_mem_write"))
+  ucMemReadPtr  = cast[UcMemReadFn](symAddr(ucLib, "uc_mem_read"))
+  ucRegWritePtr = cast[UcRegWriteFn](symAddr(ucLib, "uc_reg_write"))
+  ucRegReadPtr  = cast[UcRegReadFn](symAddr(ucLib, "uc_reg_read"))
+  ucEmuStartPtr = cast[UcEmuStartFn](symAddr(ucLib, "uc_emu_start"))
+  ucEmuStopPtr  = cast[UcEmuStopFn](symAddr(ucLib, "uc_emu_stop"))
+  ucHookAddPtr  = cast[UcHookAddFn](symAddr(ucLib, "uc_hook_add"))
+  ucHookDelPtr  = cast[UcHookDelFn](symAddr(ucLib, "uc_hook_del"))
+  result = ucOpenPtr != nil
+
+# ---------------------------------------------------------------------------
+# Public API (mirrors the original {.dynlib.} declarations).
+# ---------------------------------------------------------------------------
+
+proc uc_open*(arch: cint, mode: cint, uc: ptr ptr UcEngine): cint =
+  if not ucLoad() or ucOpenPtr == nil: return UC_ERR_ARCH
+  ucOpenPtr(arch, mode, uc)
+
+proc uc_close*(uc: ptr UcEngine): cint =
+  if not ucLoad() or ucClosePtr == nil: return UC_ERR_ARCH
+  ucClosePtr(uc)
+
 proc uc_mem_map*(uc: ptr UcEngine, address: uint64,
-                 size: csize_t, perms: cuint): cint
-  {.importc: "uc_mem_map", dynlib: unicornDynlib.}
+                 size: csize_t, perms: cuint): cint =
+  if not ucLoad() or ucMemMapPtr == nil: return UC_ERR_ARCH
+  ucMemMapPtr(uc, address, size, perms)
 
-# uc_mem_write: copy bytes into the emulated memory region at address.
 proc uc_mem_write*(uc: ptr UcEngine, address: uint64,
-                   bytes: pointer, size: csize_t): cint
-  {.importc: "uc_mem_write", dynlib: unicornDynlib.}
+                   bytes: pointer, size: csize_t): cint =
+  if not ucLoad() or ucMemWritePtr == nil: return UC_ERR_ARCH
+  ucMemWritePtr(uc, address, bytes, size)
 
-# uc_mem_read: copy bytes out of the emulated memory region at address.
 proc uc_mem_read*(uc: ptr UcEngine, address: uint64,
-                  bytes: pointer, size: csize_t): cint
-  {.importc: "uc_mem_read", dynlib: unicornDynlib.}
+                  bytes: pointer, size: csize_t): cint =
+  if not ucLoad() or ucMemReadPtr == nil: return UC_ERR_ARCH
+  ucMemReadPtr(uc, address, bytes, size)
 
-# uc_reg_write: write a value into a CPU register.
-# value must point to a variable sized to match the register (e.g. uint64).
-proc uc_reg_write*(uc: ptr UcEngine, regid: cint, value: pointer): cint
-  {.importc: "uc_reg_write", dynlib: unicornDynlib.}
+proc uc_reg_write*(uc: ptr UcEngine, regid: cint, value: pointer): cint =
+  if not ucLoad() or ucRegWritePtr == nil: return UC_ERR_ARCH
+  ucRegWritePtr(uc, regid, value)
 
-# uc_reg_read: read the current value of a CPU register.
-# value must point to a variable sized to match the register (e.g. uint64).
-proc uc_reg_read*(uc: ptr UcEngine, regid: cint, value: pointer): cint
-  {.importc: "uc_reg_read", dynlib: unicornDynlib.}
+proc uc_reg_read*(uc: ptr UcEngine, regid: cint, value: pointer): cint =
+  if not ucLoad() or ucRegReadPtr == nil: return UC_ERR_ARCH
+  ucRegReadPtr(uc, regid, value)
 
-# uc_emu_start: begin emulation from begin up to (not including) until.
-# timeout is in microseconds (0 = no timeout).
-# count is the maximum number of instructions to execute (0 = no limit).
 proc uc_emu_start*(uc: ptr UcEngine, begin: uint64, until: uint64,
-                   timeout: uint64, count: csize_t): cint
-  {.importc: "uc_emu_start", dynlib: unicornDynlib.}
+                   timeout: uint64, count: csize_t): cint =
+  if not ucLoad() or ucEmuStartPtr == nil: return UC_ERR_ARCH
+  ucEmuStartPtr(uc, begin, until, timeout, count)
 
-# uc_emu_stop: request that a running emulation stop at the next safe point.
-proc uc_emu_stop*(uc: ptr UcEngine): cint
-  {.importc: "uc_emu_stop", dynlib: unicornDynlib.}
+proc uc_emu_stop*(uc: ptr UcEngine): cint =
+  if not ucLoad() or ucEmuStopPtr == nil: return UC_ERR_ARCH
+  ucEmuStopPtr(uc)
 
-# uc_hook_add: register a callback over the address range [begin, end].
-# hookType is one of the UC_HOOK_* constants.
-# callback and userData are raw pointers; cast the callback proc as needed.
-# For UC_HOOK_CODE, callback must match UcCodeHookCb.
 proc uc_hook_add*(uc: ptr UcEngine, hh: ptr UcHook, hookType: cint,
                   callback: pointer, userData: pointer,
-                  begin: uint64, `end`: uint64): cint
-  {.importc: "uc_hook_add", dynlib: unicornDynlib.}
+                  begin: uint64, `end`: uint64): cint =
+  if not ucLoad() or ucHookAddPtr == nil: return UC_ERR_ARCH
+  ucHookAddPtr(uc, hh, hookType, callback, userData, begin, `end`)
 
-# uc_hook_del: remove a previously registered hook.
-proc uc_hook_del*(uc: ptr UcEngine, hh: UcHook): cint
-  {.importc: "uc_hook_del", dynlib: unicornDynlib.}
+proc uc_hook_del*(uc: ptr UcEngine, hh: UcHook): cint =
+  if not ucLoad() or ucHookDelPtr == nil: return UC_ERR_ARCH
+  ucHookDelPtr(uc, hh)

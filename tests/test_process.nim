@@ -71,6 +71,10 @@ suite "Process Module - Platform":
 when defined(linux):
   import posix
 
+  # Use _exit() in child branches so Nim's atexit/unittest handlers do not
+  # run in the forked child and corrupt the parent's exit code.
+  proc rawExit(code: cint) {.importc: "_exit", header: "<unistd.h>", noreturn.}
+
   # Spawn a child that calls traceMe() then raises SIGSTOP, and wait for it.
   # Returns the child PID. The caller is responsible for cleanup.
   proc spawnTracedChild(): Pid =
@@ -99,7 +103,7 @@ when defined(linux):
       let pid = fork()
       if pid == Pid(0):
         discard sleep(10)
-        quit(0)
+        rawExit(0)
 
       defer: reapChild(pid)
 
