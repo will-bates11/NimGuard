@@ -20,7 +20,7 @@ jobs:
           nim-version: 'stable'
 
       - name: Build NimGuard
-        run: nimble build -y
+        run: nim c -d:release --path:src -o:nimguard src/main.nim
 
       - name: Run tests
         run: nim c -r --path:src tests/test_patcher.nim
