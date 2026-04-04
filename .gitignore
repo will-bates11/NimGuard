@@ -1,33 +1,32 @@
-# Nim compiled binaries and intermediate files
+# Nim build output
 nimguard
 nimguard.exe
-nimguard.nims
-nimguard.nim.cfg
 nimcache/
 *.o
 *.obj
-*.exe
+
+# Nimble artifacts
+nimguard.nims
+nimguard.nim.cfg
+*.nimblecache/
+nimbledeps.json
+
+# C library binaries (should be installed system-wide, not committed)
 *.dll
 *.so
 *.dylib
 
-# Nimble package and build artifacts
-*.nimblecache/
-nimbledeps.json
-test_rules.json  # Temporary test rule files
+# Test fixtures generated at runtime
+test_rules.json
 
-# Logs and debugging files
-*.log
-*.trace
-*.debug
-
-# Editor and IDE-specific files
+# Editor files
 .idea/
 .vscode/
 *.sublime-workspace
-*.swp  # Vim swap files
-*~      # Backup files
+*.swp
+*~
 
-# System files (macOS, Windows, Linux)
+# OS files
 .DS_Store
 Thumbs.db
+desktop.ini

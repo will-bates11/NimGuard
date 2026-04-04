@@ -1,154 +1,106 @@
-# NimGuard System Architecture Document
+# NimGuard Architecture
 
-## 1. Overview
+## Overview
 
-NimGuard is a dynamic binary patching and instrumentation tool designed to analyze, modify, and monitor executable binaries without requiring source code access. It integrates disassembly, runtime patching, and behavior monitoring into a flexible system that can be used for security research, vulnerability mitigation, and reverse engineering.
+NimGuard is structured as a set of focused modules with a thin CLI entry point. C library features (disassembly, assembly, emulation) are loaded lazily at runtime so the binary can be built and run without those libraries installed.
 
-The core architecture consists of three main components:
-
-1. Binary Analysis & Disassembly (Capstone)
-2. Dynamic Patching (Keystone)
-3. Runtime Instrumentation & Hooking (Unicorn)
-
-## 2. High-Level Architecture
-
-NimGuard is structured into modular components to facilitate extensibility and performance while maintaining a clear separation of concerns.
+## Module Structure
 
 ```
-+------------------------------------------+
-|                NimGuard                   |
-+------------------------------------------+
-|      Command Line Interface (CLI)         |
-+------------------------------------------+
-|          Rule-Based Patch Engine          |
-+------------------------------------------+
-| Binary Analysis | Dynamic Patching | Instrumentation  |
-|   (Capstone)    |    (Keystone)    |    (Unicorn)     |
-+------------------------------------------+
-|           Memory & Execution Hooks        |
-+------------------------------------------+
-|        Operating System Kernel API        |
-+------------------------------------------+
+src/
+  main.nim              CLI entry point and flag dispatch
+  binary.nim            ELF and PE header parsing (pure Nim, no C deps)
+  patcher.nim           Static patching and emulation-based patch testing
+  rules.nim             JSON patch rule loading and default rule set
+  instrumentation.nim   Pre/post-execution hook types and hook registration
+  disassembler.nim      Capstone-backed disassembly (lazy-loaded)
+  assembler.nim         Keystone-backed assembly (lazy-loaded)
+  emulator.nim          Unicorn-backed CPU emulation (lazy-loaded)
+  process.nim           Linux ptrace process control
+  winprocess.nim        Windows Win32 debug API process control
+  runtime.nim           Cross-platform dispatcher (ptrace on Linux, Win32 on Windows)
+  winruntime.nim        Higher-level Windows instrumentation operations
+  bindings/
+    capstone.nim        Capstone C FFI declarations
+    keystone.nim        Keystone C FFI declarations
+    unicorn.nim         Unicorn C FFI declarations
 ```
 
-Each major component plays a critical role in the system's operation.
+## Module Descriptions
 
-## 3. Component Breakdown
+### main.nim
 
-### 3.1. Binary Analysis (Capstone)
+Parses CLI flags using `parseopt` and dispatches to the appropriate module procedures. Handles two top-level modes: static analysis (binary path required) and live process instrumentation (`--attach <pid>`).
 
-NimGuard uses the Capstone disassembly engine to analyze binaries at runtime. The key responsibilities of this module include:
+### binary.nim
 
-- Parsing binary files (ELF, PE, Mach-O)
-- Identifying function entry points
-- Recognizing known vulnerability patterns (e.g., unsafe strcpy, gets)
-- Extracting control flow and call graphs
+Pure-Nim ELF and PE parser. Reads 32-bit and 64-bit variants of both formats, extracts section headers with virtual addresses, file offsets, sizes, and RWX flags, and identifies the architecture (x86, x64, ARM, ARM64). No C libraries required.
 
-#### Workflow
+### patcher.nim
 
-1. Load the binary into memory
-2. Identify function entry points
-3. Disassemble functions and extract assembly instructions
-4. Store results for further analysis
+Reads the parsed binary, applies `PatchRule` entries (byte substitution), and writes the result to an output file. Also provides `testPatchInEmulator`, which loads the binary into Unicorn and verifies a proposed patch does not crash emulation before the patch is written to disk.
 
-### 3.2. Dynamic Patching (Keystone)
+### rules.nim
 
-Patching is handled via the Keystone assembler, which allows NimGuard to generate custom assembly instructions dynamically.
+Loads patch rules from a JSON file. Provides a default rule set used when no `--rules` file is given. Each rule has an identifier, description, condition string, and patch string.
 
-#### Patching Methods
+### instrumentation.nim
 
-1. Inline Code Replacement
-   - Replace vulnerable instructions with safer alternatives (e.g., mov eax, 0 to bypass an authentication check)
+Defines `HookType` and `InstrumentationHook` types. Provides `setupHooks`, which runs `analyzeBinary` and registers a pre-execution hook for each flagged function name. Used by the `--monitor` flag.
 
-2. NOP Sled Injection
-   - Neutralize functions by inserting nop (no-operation) instructions
+### disassembler.nim + bindings/capstone.nim
 
-3. Code Cave Injection
-   - Insert custom payloads in unused binary regions
+`bindings/capstone.nim` declares the Capstone C API via `{.importc.}` and loads `libcapstone` at runtime using a manual lazy-loader so a missing library produces a clear error rather than a link failure. `disassembler.nim` wraps the FFI with Nim-typed procedures: `disassembleSection` returns a `seq[Instruction]`, and `isCapstoneAvailable` lets callers check availability before use.
 
-4. Function Hooking
-   - Redirect function calls to custom handlers
+### assembler.nim + bindings/keystone.nim
 
-#### Example Workflow
+Same pattern as the Capstone layer. `bindings/keystone.nim` lazy-loads `libkeystone`. `assembler.nim` exposes `assembleBlock`, `assembleInstruction`, `generateNop`, and `isKeystoneAvailable`.
 
-1. Identify a vulnerable function (e.g., buffer overflow in main)
-2. Generate replacement instructions using Keystone
-3. Overwrite original instructions with patched code
-4. Verify execution correctness via instrumentation
+### emulator.nim + bindings/unicorn.nim
 
-### 3.3. Runtime Instrumentation (Unicorn)
+`bindings/unicorn.nim` lazy-loads `libunicorn`. `emulator.nim` provides `createEmulator`, `closeEmulator`, `loadBinary`, `emulateRange`, and `isUnicornAvailable`. Emulator contexts map the binary's `.text` section into Unicorn memory and run up to a configurable instruction count.
 
-Instrumentation is achieved using the Unicorn emulator and low-level OS hooks.
+### process.nim
 
-#### Instrumentation Features
+Wraps the Linux `ptrace(2)` syscall. Provides `attachProcess`, `detachProcess`, `readProcessMemory`, `writeProcessMemory`, `getRegisters`, `setRegisters`, `injectBreakpoint`, `removeBreakpoint`, and `traceSyscalls`. On non-Linux platforms all procedures return a `pePlatform` error without performing any action.
 
-- Function Call Monitoring: Logs API calls and function parameters
-- Memory Access Tracking: Detects suspicious reads/writes
-- Execution Flow Analysis: Identifies control flow anomalies
+### winprocess.nim
 
-#### Example Use Case
+Wraps the Windows debugging API (`OpenProcess`, `ReadProcessMemory`, `WriteProcessMemory`, `DebugActiveProcess`, `WaitForDebugEvent`, etc.). Provides the same logical interface as `process.nim`. On non-Windows platforms all procedures return a `wpPlatform` error.
 
-If an authentication function receives user input and returns a boolean, an instrumentation hook could log the return value before it is used in decision-making.
+### runtime.nim
 
-## 4. Rule-Based Patching Engine
+Cross-platform dispatcher. On Linux it delegates to `process.nim`; on Windows it delegates to `winprocess.nim`; on other platforms it returns a not-supported error. Callers import only `runtime.nim` and never reference the platform modules directly.
 
-NimGuard enables users to define custom patching rules using a simple YAML-based DSL.
+### winruntime.nim
 
-### Example Rule Definition
+Higher-level Windows instrumentation built on `winprocess.nim`. Provides `attachProcess`, `detachProcess`, `patchProcessMemory`, `injectBreakpoint`, and `monitorSyscalls` with Windows-specific semantics (debug event loop, INT3 breakpoints via `WriteProcessMemory`).
 
-```yaml
-rules:
-  - identifier: "auth_bypass"
-    description: "Bypass authentication check"
-    condition: "if function login() is called"
-    patch: "mov eax, 1; ret"
+## Data Flow
+
+### Static analysis path
+
+```
+main.nim
+  -> binary.nim          parseBinary()      -> BinaryInfo
+  -> disassembler.nim    disassembleSection() -> seq[Instruction]
+  -> patcher.nim         analyzeBinary()    -> BinaryAnalysis
+  -> rules.nim           loadRules()        -> seq[PatchRule]
+  -> patcher.nim         applyPatches()     -> patched file on disk
+  -> emulator.nim        emulateRange()     -> EmulationResult
 ```
 
-### Rule Execution Flow
+### Live instrumentation path
 
-1. Parse Rules → Load YAML-based rule set
-2. Apply Conditions → Check if function matches a rule
-3. Generate Patch → Assemble new instructions with Keystone
-4. Inject Patch → Apply changes dynamically
-5. Monitor Execution → Verify patched function behavior
-
-## 5. CLI and Configuration
-
-The CLI provides multiple options to interact with NimGuard:
-
-```bash
-./nimguard target_binary.exe --analyze
-./nimguard target_binary.exe --patch --rules custom_rules.yaml
-./nimguard target_binary.exe --monitor
+```
+main.nim
+  -> runtime.nim         attachProcess()
+  -> runtime.nim         injectBreakpoint() / patchProcessMemory() / monitorSyscalls()
+  -> runtime.nim         detachProcess()
 ```
 
-## 6. Memory and Execution Hooks
+## Dependency Notes
 
-NimGuard interacts with the OS through low-level system calls for:
-
-- Attaching to running processes
-- Modifying executable memory regions
-- Injecting and executing code dynamically
-
-### Security and Rollback
-
-To prevent system instability:
-
-- All patches are reversible: NimGuard stores original instructions
-- Patch verification: Ensures modified code does not crash the binary
-- Safe mode: Allows dry-run patching to test changes before committing
-
-## 7. Future Enhancements
-
-### Phase 2: Advanced Features
-
-- Automated Exploit Prevention: Use AI/ML for automatic vulnerability detection
-- Web Dashboard for Monitoring: A lightweight interface to visualize execution logs
-- Stealth Mode: Evade anti-tamper mechanisms for advanced security research
-- Cross-Platform Enhancements: Improve compatibility with more architectures
-
-## 8. Conclusion
-
-NimGuard is designed to bridge the gap between static binary analysis and real-time security instrumentation. By combining disassembly, runtime patching, and execution monitoring, it provides a powerful toolkit for security researchers and reverse engineers working with legacy and closed-source binaries.
-
-> ⚠ Warning: This tool should only be used in legally authorized environments. Unauthorized patching may violate software agreements and security policies.
+- The three C libraries (Capstone, Keystone, Unicorn) are optional at build time and runtime. Each binding module exports an `isXxxAvailable()` proc that returns false when the library is not found, allowing the caller to print a helpful message instead of crashing.
+- `process.nim` and `winprocess.nim` compile on all platforms but are no-ops outside their target OS. This keeps the build matrix simple.
+- No external Nim packages are required. All C interop uses direct FFI.

@@ -1,13 +1,12 @@
 # NimGuard - Dynamic Binary Patching & Instrumentation Tool
 
-version       = "0.6.0"
-author        = "William Bates"
-description   = "Dynamic binary patching and instrumentation tool for legacy systems."
+version       = "1.0.0"
+author        = "Will Bates"
+description   = "Binary patching and instrumentation tool for ELF and PE binaries."
 license       = "MIT"
 srcDir        = "src"
 
-# Specify required Nim version
-requires "nim >= 1.6.0"
+requires "nim >= 2.0.0"
 
 # No external Nim packages are required. Capstone integration uses Nim FFI
 # (src/bindings/capstone.nim) to bind directly to the system-installed C library.
