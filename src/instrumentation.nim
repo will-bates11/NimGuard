@@ -33,8 +33,8 @@ proc setupHooks*(binaryPath: string) =
 
   # Example: Hooking functions detected in analysis
   let analysis = analyzeBinary(binaryPath)
-  for func in analysis.vulnerabilities:
-    registerHook(InstrumentationHook(hookType: PreExecution, functionName: func, callback: proc() = monitorFunctionCall(func)))
+  for fnName in analysis.vulnerabilities:
+    registerHook(InstrumentationHook(hookType: PreExecution, functionName: fnName, callback: proc() = monitorFunctionCall(fnName)))
 
   # TODO: Implement memory hooks using inline assembly or Unicorn engine
 

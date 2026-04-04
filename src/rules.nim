@@ -1,5 +1,5 @@
 # NimGuard - Rule-Based Patching System
-import os, json, strutils
+import os, json
 
 type
   PatchRule* = object
