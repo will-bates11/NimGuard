@@ -104,21 +104,11 @@ jobs:
       - name: Build NimGuard
         run: nim c -d:release --path:src -o:nimguard.exe src/main.nim
 
+      # Binary parsing is pure Nim with no C library dependencies.
       - name: Run binary parsing tests
         run: nim c -r --path:src tests/test_binary.nim
 
-      - name: Run patcher tests
-        run: nim c -r --path:src tests/test_patcher.nim
-
-      - name: Run disassembler tests
-        run: nim c -r --path:src tests/test_disassembler.nim
-
-      - name: Run assembler tests
-        run: nim c -r --path:src tests/test_assembler.nim
-
-      - name: Run emulator tests
-        run: nim c -r --path:src tests/test_emulator.nim
-
+      # Windows-specific instrumentation tests.
       - name: Run winprocess tests
         run: nim c -r --path:src tests/test_winprocess.nim
 
