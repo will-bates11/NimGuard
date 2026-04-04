@@ -1,22 +1,23 @@
 # NimGuard
 
-**NimGuard** is a dynamic binary patching and instrumentation tool for legacy systems.  
-It enables runtime analysis, patch injection, and behavior monitoring—all without requiring source code modifications.  
+**NimGuard** is a dynamic binary patching and instrumentation tool for legacy systems.
+It enables runtime analysis, patch injection, and behavior monitoring, all without requiring source code modifications.
 
-This tool is designed to help security researchers, DevSecOps engineers, and reverse engineers analyze, patch, and protect legacy binaries that are otherwise difficult to modify due to missing source code or vendor lock-in. 
+This tool is designed to help security researchers, DevSecOps engineers, and reverse engineers analyze, patch, and protect legacy binaries that are otherwise difficult to modify due to missing source code or vendor lock-in.
 
 ## Features
 
-✅ **Binary Analysis:** Disassemble and analyze binaries using Capstone.  
-✅ **Dynamic Patching:** Assemble and inject patches at runtime using Keystone.  
-✅ **Instrumentation Hooks:** Insert monitoring hooks for logging, runtime protection, and anomaly detection.  
-✅ **Rule-Based Engine:** Define patching rules via a custom DSL for flexible, scenario-based modifications.  
-✅ **Live Debugging:** Emulate patched code before applying it using Unicorn.  
-✅ **Cross-Platform Support:** Works on Windows, Linux, and macOS with proper dependencies installed.  
+- **Binary Analysis:** Disassemble and analyze binaries using Capstone.
+- **Dynamic Patching:** Assemble and inject patches at runtime using Keystone.
+- **Instrumentation Hooks:** Insert monitoring hooks for logging, runtime protection, and anomaly detection.
+- **Rule-Based Engine:** Define patching rules via a custom DSL for flexible, scenario-based modifications.
+- **Live Debugging:** Emulate patched code before applying it using Unicorn.
+- **Cross-Platform Support:** Works on Windows, Linux, and macOS with proper dependencies installed.
 
 ## Installation
 
 ### 1. Install Nim
+
 Use [choosenim](https://github.com/dom96/choosenim) to install Nim:
 
 ```bash
@@ -29,17 +30,30 @@ Verify installation:
 nim -v
 ```
 
-### 2. Install Dependencies
+### 2. Install System Dependencies
 
-Ensure you have the required dependencies installed:
+NimGuard uses FFI bindings to C libraries that must be installed at the OS level.
+No Nim package manager install is needed for these.
+
+**Capstone** (disassembly, required for `--analyze` and `--disasm`):
 
 ```bash
-nimble install capstone
-nimble install keystone
-nimble install unicorn
+# Linux (Debian/Ubuntu)
+sudo apt-get install libcapstone-dev
+
+# macOS
+brew install capstone
+
+# Windows
+# Download capstone.dll from https://www.capstone-engine.org/ and place it
+# in the same directory as the nimguard executable.
 ```
 
-(If these libraries are not available in Nimble, you may need to install system-level bindings.)
+**Keystone** (assembly/patching, Phase 3, optional for now):
+See https://www.keystone-engine.org/
+
+**Unicorn** (emulation, Phase 4, optional for now):
+See https://www.unicorn-engine.org/
 
 ### 3. Clone the Repository
 
@@ -50,112 +64,102 @@ cd nimguard
 
 ### 4. Build NimGuard
 
-Compile the project:
-
 ```bash
 nimble build
 ```
 
 ### 5. Run Tests
 
-To verify functionality, run:
-
 ```bash
-nim c -r tests/test_patcher.nim
+nimble test
 ```
 
 ---
 
 ## Usage
 
-### Basic Command
+### Analyze a binary
 
-Run NimGuard to analyze and patch a binary:
+Report format, architecture, sections, and dangerous function calls found:
 
 ```bash
-./nimguard target_binary.exe
+./nimguard target_binary --analyze
 ```
 
-### Example Scenario: Patching a Vulnerability
+### Show full disassembly
 
-If target_binary.exe contains a function with a known buffer overflow, NimGuard will:
+Print every instruction in the `.text` section:
 
-1. Disassemble the function using Capstone.
+```bash
+./nimguard target_binary --disasm
+```
 
-2. Identify the overflow vulnerability.
+### Apply patches
 
-3. Inject a runtime patch using Keystone (e.g., replacing a vulnerable instruction with a safer one).
+```bash
+./nimguard target_binary --patch
+./nimguard target_binary --patch --rules custom_rules.json
+```
 
-4. Insert instrumentation hooks for logging and monitoring.
+### Enable live monitoring
+
+```bash
+./nimguard target_binary --monitor
+```
 
 ### Rule-Based Patching
 
 NimGuard supports a rule-based engine where you define patching rules:
 
-```yaml
-rules:
-  - identifier: "auth_bypass"
-    description: "Bypass authentication in login function"
-    condition: "if function login() is called"
-    patch: "mov eax, 1; ret"
+```json
+{
+  "rules": [
+    {
+      "identifier": "auth_bypass",
+      "description": "Bypass authentication in login function",
+      "condition": "if function login() is called",
+      "patch": "mov eax, 1; ret"
+    }
+  ]
+}
 ```
 
 Load a custom rule set:
 
 ```bash
-./nimguard target_binary.exe --rules my_rules.yaml
+./nimguard target_binary --rules my_rules.json
 ```
-
-### Live Monitoring
-
-To enable live monitoring and logging:
-
-```bash
-./nimguard target_binary.exe --monitor
-```
-
-This mode will attach runtime hooks to the binary and provide insights into function calls, arguments, and memory access.
 
 ---
 
 ## Development Roadmap
 
-### Phase 1: Initial Functionality
+### Phase 0 and 1: Binary format parsing
 
-✅ Implement binary analysis with Capstone.
+Implemented pure-Nim ELF and PE header parsing (no external libraries).
 
-✅ Develop basic runtime patching with Keystone.
+### Phase 2: Capstone integration
 
-✅ Set up instrumentation hooks for logging.
+Real disassembly via Capstone FFI. The `--analyze` flag reports dangerous
+function calls found in the binary. The `--disasm` flag shows full `.text`
+disassembly.
 
-✅ Create rule-based patching system.
+### Phase 3: Keystone integration (planned)
 
-### Phase 2: Advanced Features
+Assembly and patch injection using Keystone.
 
-⏳ Add interactive shell for manual patching.
+### Phase 4: Unicorn integration (planned)
 
-⏳ Implement a rollback mechanism for safe patching.
-
-⏳ Support for ELF, PE, and Mach-O binaries.
-
-⏳ Create a Web UI for real-time patching and monitoring.
-
-⏳ Add stealth mode to evade anti-tampering mechanisms.
+Emulation-based pre-flight testing of patches using Unicorn.
 
 ---
 
 ## Contributing
 
-We welcome contributions! Follow these steps to contribute:
-
 1. Fork the repository
-
 2. Create a feature branch: `git checkout -b my-new-feature`
-
 3. Commit your changes: `git commit -m "Add my feature"`
-
 4. Push to the branch: `git push origin my-new-feature`
-
 5. Submit a pull request
 
 For major changes, please open an issue first to discuss your proposal.
@@ -164,6 +168,6 @@ For major changes, please open an issue first to discuss your proposal.
 
 ## Legal Disclaimer
 
-⚠ Use this tool only in a controlled and legal environment.
+Use this tool only in a controlled and legal environment.
 NimGuard is designed for research, security analysis, and ethical hacking purposes.
 Misuse of this software in unauthorized systems may violate laws and regulations.

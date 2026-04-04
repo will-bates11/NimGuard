@@ -1,5 +1,5 @@
 # NimGuard - Dynamic Binary Patching and Instrumentation Tool
-import parseopt, strutils, patcher, instrumentation, rules, binary
+import parseopt, strutils, patcher, instrumentation, rules, binary, disassembler
 
 proc showHelp() =
   echo """
@@ -8,15 +8,17 @@ proc showHelp() =
     nimguard <binary> [options]
 
   Options:
-    --analyze           Perform binary analysis
+    --analyze           Perform binary analysis and report dangerous function calls
+    --disasm            Show full disassembly of the .text section
     --patch             Apply patches based on predefined rules
     --monitor           Enable runtime instrumentation and logging
     --rules <file>      Load custom patching rules from a file
     --help              Show this help message
 
   Example:
-    ./nimguard target_binary.exe --analyze
-    ./nimguard target_binary.exe --patch --rules custom_rules.json
+    ./nimguard target_binary --analyze
+    ./nimguard target_binary --disasm
+    ./nimguard target_binary --patch --rules custom_rules.json
   """
 
 proc formatFlags(flags: SectionFlags): string =
@@ -26,7 +28,7 @@ proc formatFlags(flags: SectionFlags): string =
   result.add(if flags.executable: "x" else: "-")
 
 proc printAnalysis(analysis: BinaryAnalysis) =
-  echo "[+] Format:      ", $analysis.format
+  echo "[+] Format:       ", $analysis.format
   echo "[+] Architecture: ", $analysis.architecture
   echo "[+] Entry point:  0x", toHex(analysis.entryPoint, 16)
   if analysis.sections.len == 0:
@@ -39,12 +41,37 @@ proc printAnalysis(analysis: BinaryAnalysis) =
            " offset=0x", toHex(s.fileOffset, 8),
            " size=0x", toHex(s.size, 8),
            " [", formatFlags(s.flags), "]"
-  echo "[+] Potential issues: ", analysis.vulnerabilities.len
+  if analysis.vulnerabilities.len == 0:
+    echo "[+] Dangerous calls: (none detected)"
+  else:
+    echo "[+] Dangerous calls (", analysis.vulnerabilities.len, "):"
+    for name in analysis.vulnerabilities:
+      echo "    [!] ", name
+
+proc printDisassembly(binaryPath: string) =
+  let info = parseBinary(binaryPath)
+  if info.format == bfUnknown:
+    echo "[-] Cannot disassemble: unknown binary format"
+    return
+
+  if not isCapstoneAvailable():
+    echo "[-] Capstone library not available. Install libcapstone-dev to enable disassembly."
+    return
+
+  echo "[+] Disassembly of .text section:"
+  let instructions = disassembleSection(info, ".text")
+  if instructions.len == 0:
+    echo "    (no instructions decoded, or .text section not found)"
+    return
+
+  for insn in instructions:
+    echo "    0x", toHex(insn.address, 16), "  ",
+         insn.mnemonic.alignLeft(10), " ", insn.opStr
 
 proc main() =
   var p = initOptParser()
   var binaryPath: string
-  var analyze, patch, monitor: bool
+  var analyze, patch, monitor, disasm: bool
   var ruleFile: string
 
   while true:
@@ -62,6 +89,8 @@ proc main() =
         return
       of "analyze":
         analyze = true
+      of "disasm":
+        disasm = true
       of "patch":
         patch = true
       of "monitor":
@@ -84,6 +113,9 @@ proc main() =
     echo "[+] Running analysis on ", binaryPath
     let analysis = analyzeBinary(binaryPath)
     printAnalysis(analysis)
+
+  if disasm:
+    printDisassembly(binaryPath)
 
   var loadedRules: seq[PatchRule]
   if ruleFile != "":

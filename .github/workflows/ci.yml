@@ -19,6 +19,9 @@ jobs:
         with:
           nim-version: 'stable'
 
+      - name: Install Capstone
+        run: sudo apt-get install -y libcapstone-dev
+
       - name: Build NimGuard
         run: nim c -d:release --path:src -o:nimguard src/main.nim
 
@@ -27,3 +30,6 @@ jobs:
 
       - name: Run binary parsing tests
         run: nim c -r --path:src tests/test_binary.nim
+
+      - name: Run disassembler tests
+        run: nim c -r --path:src tests/test_disassembler.nim
