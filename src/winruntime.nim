@@ -2,7 +2,7 @@
 # Provides higher-level operations for live process analysis and patching on Windows.
 # Depends on winprocess.nim for Win32 primitives. On non-Windows platforms all
 # procedures return a platform-not-supported error.
-import winprocess, disassembler
+import winprocess, disassembler, binary
 
 type
   WinRuntimeResult* = object
