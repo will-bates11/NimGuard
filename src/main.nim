@@ -1,5 +1,5 @@
 # NimGuard - Dynamic Binary Patching and Instrumentation Tool
-import parseopt, strutils, patcher, instrumentation, rules, binary, disassembler
+import parseopt, strutils, patcher, instrumentation, rules, binary, disassembler, emulator
 
 proc showHelp() =
   echo """
@@ -14,6 +14,8 @@ proc showHelp() =
     --output <file>     Write the patched binary to this path (used with --patch)
     --monitor           Enable runtime instrumentation and logging
     --rules <file>      Load custom patching rules from a file
+    --emulate           Run the .text section through the CPU emulator
+    --test-patch        Test a NOP patch at offset 0 in the emulator before applying
     --help              Show this help message
 
   Example:
@@ -21,6 +23,8 @@ proc showHelp() =
     ./nimguard target_binary --disasm
     ./nimguard target_binary --patch --rules custom_rules.json
     ./nimguard target_binary --patch --output patched_binary
+    ./nimguard target_binary --emulate
+    ./nimguard target_binary --test-patch
   """
 
 proc formatFlags(flags: SectionFlags): string =
@@ -50,6 +54,46 @@ proc printAnalysis(analysis: BinaryAnalysis) =
     for name in analysis.vulnerabilities:
       echo "    [!] ", name
 
+proc printEmulation(binaryPath: string) =
+  let info = parseBinary(binaryPath)
+  if info.format == bfUnknown:
+    echo "[-] Cannot emulate: unknown binary format"
+    return
+
+  if not isUnicornAvailable():
+    echo "[-] Unicorn library not available. Install libunicorn-dev to enable emulation."
+    return
+
+  echo "[+] Emulating .text section of ", binaryPath
+  var ctx = createEmulator(info.architecture)
+  defer: closeEmulator(ctx)
+  if ctx.engine == nil:
+    echo "[-] Failed to create emulator context"
+    return
+
+  if not ctx.loadBinary(info, ".text"):
+    echo "[-] Failed to load .text section into emulator"
+    return
+
+  var textAddr = 0'u64
+  var textSize = 0
+  for s in info.sections:
+    if s.name == ".text":
+      textAddr = s.virtualAddress
+      textSize = int(s.size)
+      break
+
+  if textAddr == 0:
+    echo "[-] .text section not found"
+    return
+
+  echo "[+] Emulating up to 256 instructions at 0x", toHex(textAddr, 16)
+  let res = ctx.emulateRange(textAddr, textAddr + uint64(textSize), 256)
+  if res.success:
+    echo "[+] Emulation completed successfully"
+  else:
+    echo "[-] Emulation stopped: ", res.errorMsg
+
 proc printDisassembly(binaryPath: string) =
   let info = parseBinary(binaryPath)
   if info.format == bfUnknown:
@@ -73,7 +117,7 @@ proc printDisassembly(binaryPath: string) =
 proc main() =
   var p = initOptParser()
   var binaryPath: string
-  var analyze, patch, monitor, disasm: bool
+  var analyze, patch, monitor, disasm, emulate, testPatch: bool
   var ruleFile: string
   var outputPath: string
 
@@ -98,6 +142,10 @@ proc main() =
         patch = true
       of "monitor":
         monitor = true
+      of "emulate":
+        emulate = true
+      of "test-patch":
+        testPatch = true
       of "rules":
         ruleFile = p.val
       of "output":
@@ -135,6 +183,22 @@ proc main() =
       echo "[+] Patching completed successfully."
     else:
       echo "[-] No patches applied."
+
+  if emulate:
+    printEmulation(binaryPath)
+
+  if testPatch:
+    echo "[+] Testing patch in emulator..."
+    let info = parseBinary(binaryPath)
+    if info.format != bfUnknown and info.rawBytes.len > 0:
+      let nop = @[0x90'u8]
+      let ok = testPatchInEmulator(binaryPath, 0, nop, info.architecture)
+      if ok:
+        echo "[+] Patch test in emulator: passed"
+      else:
+        echo "[-] Patch test in emulator: failed"
+    else:
+      echo "[-] Cannot test patch: unrecognised binary format"
 
   if monitor:
     echo "[+] Enabling runtime monitoring..."
