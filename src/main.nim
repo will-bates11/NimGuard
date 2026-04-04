@@ -21,9 +21,9 @@ proc showHelp() =
 
 proc formatFlags(flags: SectionFlags): string =
   result = ""
-  result.add(if flags.readable   then "r" else "-")
-  result.add(if flags.writable   then "w" else "-")
-  result.add(if flags.executable then "x" else "-")
+  result.add(if flags.readable:   "r" else: "-")
+  result.add(if flags.writable:   "w" else: "-")
+  result.add(if flags.executable: "x" else: "-")
 
 proc printAnalysis(analysis: BinaryAnalysis) =
   echo "[+] Format:      ", $analysis.format
