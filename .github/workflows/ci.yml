@@ -22,6 +22,23 @@ jobs:
       - name: Install Capstone
         run: sudo apt-get install -y libcapstone-dev
 
+      - name: Install Keystone
+        run: |
+          if sudo apt-get install -y libkeystone-dev 2>/dev/null; then
+            echo "Installed libkeystone-dev from apt"
+          else
+            echo "Building Keystone from source"
+            sudo apt-get install -y cmake build-essential
+            git clone --depth 1 https://github.com/keystone-engine/keystone.git /tmp/keystone
+            cmake -S /tmp/keystone -B /tmp/keystone/build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DBUILD_SHARED_LIBS=ON \
+              -G "Unix Makefiles"
+            cmake --build /tmp/keystone/build -j$(nproc)
+            sudo cmake --install /tmp/keystone/build
+            sudo ldconfig
+          fi
+
       - name: Build NimGuard
         run: nim c -d:release --path:src -o:nimguard src/main.nim
 
@@ -33,3 +50,6 @@ jobs:
 
       - name: Run disassembler tests
         run: nim c -r --path:src tests/test_disassembler.nim
+
+      - name: Run assembler tests
+        run: nim c -r --path:src tests/test_assembler.nim

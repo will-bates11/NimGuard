@@ -1,6 +1,6 @@
 # NimGuard - Dynamic Binary Patching & Instrumentation Tool
 
-version       = "0.2.0"
+version       = "0.3.0"
 author        = "William Bates"
 description   = "Dynamic binary patching and instrumentation tool for legacy systems."
 license       = "MIT"
@@ -18,7 +18,10 @@ requires "nim >= 1.6.0"
 #     macOS:   brew install capstone
 #     Windows: download capstone.dll from https://www.capstone-engine.org/
 #
-#   Keystone (Phase 3, assembly/patching):   https://www.keystone-engine.org/
+#   Keystone (Phase 3, assembly/patching):
+#     Linux:   sudo apt-get install libkeystone-dev  (or build from source)
+#     macOS:   brew install keystone
+#     Windows: download keystone.dll from https://www.keystone-engine.org/
 #   Unicorn  (Phase 4, emulation):           https://www.unicorn-engine.org/
 
 # Include directories for external bindings
@@ -29,6 +32,7 @@ task test, "Run unit tests":
   exec "nim c -r --path:src tests/test_patcher.nim"
   exec "nim c -r --path:src tests/test_binary.nim"
   exec "nim c -r --path:src tests/test_disassembler.nim"
+  exec "nim c -r --path:src tests/test_assembler.nim"
 
 # Custom build task
 task build, "Compile NimGuard":

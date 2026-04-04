@@ -11,6 +11,7 @@ proc showHelp() =
     --analyze           Perform binary analysis and report dangerous function calls
     --disasm            Show full disassembly of the .text section
     --patch             Apply patches based on predefined rules
+    --output <file>     Write the patched binary to this path (used with --patch)
     --monitor           Enable runtime instrumentation and logging
     --rules <file>      Load custom patching rules from a file
     --help              Show this help message
@@ -19,6 +20,7 @@ proc showHelp() =
     ./nimguard target_binary --analyze
     ./nimguard target_binary --disasm
     ./nimguard target_binary --patch --rules custom_rules.json
+    ./nimguard target_binary --patch --output patched_binary
   """
 
 proc formatFlags(flags: SectionFlags): string =
@@ -73,6 +75,7 @@ proc main() =
   var binaryPath: string
   var analyze, patch, monitor, disasm: bool
   var ruleFile: string
+  var outputPath: string
 
   while true:
     p.next()
@@ -97,6 +100,8 @@ proc main() =
         monitor = true
       of "rules":
         ruleFile = p.val
+      of "output":
+        outputPath = p.val
       else:
         echo "Unknown option: --", p.key
         showHelp()
@@ -126,7 +131,7 @@ proc main() =
 
   if patch:
     echo "[+] Applying patches..."
-    if applyPatches(binaryPath, loadedRules):
+    if applyPatches(binaryPath, loadedRules, outputPath):
       echo "[+] Patching completed successfully."
     else:
       echo "[-] No patches applied."
