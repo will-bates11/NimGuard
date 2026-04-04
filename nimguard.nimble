@@ -1,6 +1,6 @@
 # NimGuard - Dynamic Binary Patching & Instrumentation Tool
 
-version       = "0.4.0"
+version       = "0.5.0"
 author        = "William Bates"
 description   = "Dynamic binary patching and instrumentation tool for legacy systems."
 license       = "MIT"
@@ -26,6 +26,12 @@ requires "nim >= 1.6.0"
 #     Linux:   sudo apt-get install libunicorn-dev
 #     macOS:   brew install unicorn
 #     Windows: download unicorn.dll from https://www.unicorn-engine.org/
+#
+#   ptrace   (Phase 5, runtime instrumentation):
+#     Linux kernel built-in; no extra packages needed.
+#     ptrace_scope may need to be 0 for PTRACE_ATTACH tests:
+#       echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
+#     Non-Linux: all process/runtime procs return a platform-not-supported error.
 
 # Include directories for external bindings
 installDirs = @["src"]
@@ -37,6 +43,8 @@ task test, "Run unit tests":
   exec "nim c -r --path:src tests/test_disassembler.nim"
   exec "nim c -r --path:src tests/test_assembler.nim"
   exec "nim c -r --path:src tests/test_emulator.nim"
+  exec "nim c -r --path:src tests/test_process.nim"
+  exec "nim c -r --path:src tests/test_runtime.nim"
 
 # Custom build task
 task build, "Compile NimGuard":
