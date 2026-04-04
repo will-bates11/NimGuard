@@ -134,12 +134,14 @@ suite "Patcher Module Tests":
 
 suite "Emulation-Based Patch Testing":
 
-  test "testPatchInEmulator returns true when Unicorn is not available":
-    # Graceful degradation: if Unicorn is absent, the function must return true
-    # so the patching pipeline is not blocked.
+  test "testPatchInEmulator handles Unicorn availability gracefully":
+    # With Unicorn: returns false when the source file does not exist.
+    # Without Unicorn: returns true for any input (graceful degradation).
     if isUnicornAvailable():
-      skip()
-    check testPatchInEmulator("any_binary", 0, @[0x90'u8], archX64) == true
+      check testPatchInEmulator("no_such_file_graceful.bin", 0,
+                                @[0x90'u8], archX64) == false
+    else:
+      check testPatchInEmulator("any_binary", 0, @[0x90'u8], archX64) == true
 
   test "testPatchInEmulator returns false for non-existent source file":
     if not isUnicornAvailable():
@@ -169,7 +171,6 @@ suite "Emulation-Based Patch Testing":
     let srcFile = "test_emu_nop.bin"
     defer: removeFile(srcFile)
     # Write a page of NOP bytes so emulation has valid instructions to run.
-    let nops = newSeq[byte](0x1000)
     var buf = newString(0x1000)
     for i in 0 ..< 0x1000:
       buf[i] = char(0x90'u8)
