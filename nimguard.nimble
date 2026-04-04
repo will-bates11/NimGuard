@@ -15,10 +15,6 @@ requires "nim >= 1.6.0"
 #   Unicorn:   https://www.unicorn-engine.org/
 # Nim FFI wrappers for these libraries will be added in Phase 2.
 
-# Compiler Flags
-passL "-O2"
-passC "-g"
-
 # Include directories for external bindings (modify if needed)
 installDirs = @["src"]
 
