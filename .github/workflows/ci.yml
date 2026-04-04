@@ -22,5 +22,8 @@ jobs:
       - name: Build NimGuard
         run: nim c -d:release --path:src -o:nimguard src/main.nim
 
-      - name: Run tests
+      - name: Run patcher tests
         run: nim c -r --path:src tests/test_patcher.nim
+
+      - name: Run binary parsing tests
+        run: nim c -r --path:src tests/test_binary.nim
