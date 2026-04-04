@@ -56,6 +56,9 @@ jobs:
             sudo ldconfig
           fi
 
+      - name: Configure ptrace scope for tests
+        run: echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
+
       - name: Build NimGuard
         run: nim c -d:release --path:src -o:nimguard src/main.nim
 
@@ -73,3 +76,9 @@ jobs:
 
       - name: Run emulator tests
         run: nim c -r --path:src tests/test_emulator.nim
+
+      - name: Run process tests
+        run: nim c -r --path:src tests/test_process.nim
+
+      - name: Run runtime tests
+        run: nim c -r --path:src tests/test_runtime.nim

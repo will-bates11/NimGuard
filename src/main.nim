@@ -1,13 +1,15 @@
 # NimGuard - Dynamic Binary Patching and Instrumentation Tool
-import parseopt, strutils, patcher, instrumentation, rules, binary, disassembler, emulator
+import parseopt, strutils, patcher, instrumentation, rules, binary, disassembler,
+       emulator, process, runtime
 
 proc showHelp() =
   echo """
   NimGuard - Dynamic Binary Patching and Instrumentation Tool
   Usage:
     nimguard <binary> [options]
+    nimguard --attach <pid> [options]
 
-  Options:
+  Static analysis options (require <binary>):
     --analyze           Perform binary analysis and report dangerous function calls
     --disasm            Show full disassembly of the .text section
     --patch             Apply patches based on predefined rules
@@ -16,15 +18,25 @@ proc showHelp() =
     --rules <file>      Load custom patching rules from a file
     --emulate           Run the .text section through the CPU emulator
     --test-patch        Test a NOP patch at offset 0 in the emulator before applying
+
+  Runtime instrumentation options (require --attach, Linux only):
+    --attach <pid>      Attach to a running process by PID
+    --inject <addr>:<hex>  Write hex bytes into process memory at hex address
+    --breakpoint <addr> Set a software breakpoint at hex address
+    --trace             Trace syscalls until the process exits
+
     --help              Show this help message
 
-  Example:
+  Examples:
     ./nimguard target_binary --analyze
     ./nimguard target_binary --disasm
     ./nimguard target_binary --patch --rules custom_rules.json
     ./nimguard target_binary --patch --output patched_binary
     ./nimguard target_binary --emulate
     ./nimguard target_binary --test-patch
+    ./nimguard --attach 1234 --breakpoint 0x401000
+    ./nimguard --attach 1234 --inject 0x401000:9090
+    ./nimguard --attach 1234 --trace
   """
 
 proc formatFlags(flags: SectionFlags): string =
@@ -114,12 +126,90 @@ proc printDisassembly(binaryPath: string) =
     echo "    0x", toHex(insn.address, 16), "  ",
          insn.mnemonic.alignLeft(10), " ", insn.opStr
 
+# Parse a hex string (with or without 0x prefix) to uint64.
+proc parseHexAddr(s: string): uint64 =
+  let trimmed = if s.len > 2 and s[0..1] == "0x": s[2..^1] else: s
+  try:
+    result = parseHexInt(trimmed).uint64
+  except:
+    result = 0
+
+# Parse a hex byte string (e.g. "9090CC") into a seq[byte].
+proc parseHexBytes(s: string): seq[byte] =
+  var i = 0
+  while i + 1 < s.len:
+    try:
+      result.add(byte(parseHexInt(s[i..i+1])))
+    except:
+      return @[]
+    i += 2
+
+proc runAttachMode(pid: int, injectSpec: string, bpAddrStr: string,
+                   trace: bool) =
+  if not isPtraceAvailable():
+    echo "[-] ptrace is not available on this platform."
+    return
+
+  echo "[+] Attaching to PID ", pid, "..."
+  let ar = runtime.attachProcess(pid)
+  if not ar.success:
+    echo "[-] Attach failed: ", ar.msg
+    return
+  echo "[+] Attached."
+
+  if bpAddrStr != "":
+    let bpAddr = parseHexAddr(bpAddrStr)
+    echo "[+] Setting breakpoint at 0x", toHex(bpAddr, 16)
+    let (bp, br) = runtime.injectBreakpoint(pid, bpAddr)
+    if br.success:
+      echo "[+] Breakpoint set (original byte: 0x", toHex(int(bp.originalByte), 2), ")"
+    else:
+      echo "[-] Breakpoint failed: ", br.msg
+
+  if injectSpec != "":
+    let colonPos = injectSpec.find(':')
+    if colonPos < 0:
+      echo "[-] --inject requires <hex_addr>:<hex_bytes> format"
+    else:
+      let addrStr  = injectSpec[0 ..< colonPos]
+      let bytesStr = injectSpec[colonPos + 1 .. ^1]
+      let injectAddr  = parseHexAddr(addrStr)
+      let injectBytes = parseHexBytes(bytesStr)
+      if injectBytes.len == 0:
+        echo "[-] No valid bytes parsed from: ", bytesStr
+      else:
+        echo "[+] Injecting ", injectBytes.len, " byte(s) at 0x",
+             toHex(injectAddr, 16)
+        let wr = runtime.patchProcessMemory(pid, injectAddr, injectBytes)
+        if wr.success:
+          echo "[+] Memory patched."
+        else:
+          echo "[-] Patch failed: ", wr.msg
+
+  if trace:
+    echo "[+] Tracing syscalls (up to 64 events)..."
+    let events = runtime.monitorSyscalls(pid, 64)
+    if events.len == 0:
+      echo "    (no syscall events captured)"
+    else:
+      for ev in events:
+        echo "    syscall ", ev.syscallNr, "  args=[",
+             toHex(ev.args[0], 16), ", ", toHex(ev.args[1], 16), ", ...]"
+
+  let dr = runtime.detachProcess(pid)
+  if dr.success:
+    echo "[+] Detached from PID ", pid
+  else:
+    echo "[-] Detach failed: ", dr.msg
+
 proc main() =
   var p = initOptParser()
   var binaryPath: string
-  var analyze, patch, monitor, disasm, emulate, testPatch: bool
-  var ruleFile: string
-  var outputPath: string
+  var analyze, patch, monitor, disasm, emulate, testPatch, trace: bool
+  var ruleFile, outputPath: string
+  var attachPid: int = -1
+  var injectSpec: string
+  var bpAddrStr: string
 
   while true:
     p.next()
@@ -146,14 +236,31 @@ proc main() =
         emulate = true
       of "test-patch":
         testPatch = true
+      of "trace":
+        trace = true
       of "rules":
         ruleFile = p.val
       of "output":
         outputPath = p.val
+      of "attach":
+        try:
+          attachPid = parseInt(p.val)
+        except:
+          echo "Error: --attach requires an integer PID."
+          return
+      of "inject":
+        injectSpec = p.val
+      of "breakpoint":
+        bpAddrStr = p.val
       else:
         echo "Unknown option: --", p.key
         showHelp()
         return
+
+  # Runtime attach mode: no binary path needed.
+  if attachPid >= 0:
+    runAttachMode(attachPid, injectSpec, bpAddrStr, trace)
+    return
 
   if binaryPath == "":
     echo "Error: No binary specified."
