@@ -34,7 +34,8 @@ proc setupHooks*(binaryPath: string) =
   # Example: Hooking functions detected in analysis
   let analysis = analyzeBinary(binaryPath)
   for fnName in analysis.vulnerabilities:
-    registerHook(InstrumentationHook(hookType: PreExecution, functionName: fnName, callback: proc() = monitorFunctionCall(fnName)))
+    let name = fnName  # owned copy required for closure capture in Nim 2.x
+    registerHook(InstrumentationHook(hookType: PreExecution, functionName: name, callback: proc() = monitorFunctionCall(name)))
 
   # TODO: Implement memory hooks using inline assembly or Unicorn engine
 
