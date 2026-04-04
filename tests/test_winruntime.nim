@@ -36,10 +36,6 @@ suite "WinRuntime Module - Platform":
     else:
       check true
 
-  test "disassembleAtAddress returns empty seq for zero count":
-    let instrs = winruntime.disassembleAtAddress(1, 0x1000'u64, 0)
-    check instrs.len == 0
-
   test "suspendAllThreads returns failure on non-Windows":
     when not defined(windows):
       let (count, r) = winruntime.suspendAllThreads(1)
@@ -76,7 +72,7 @@ suite "WinRuntime Module - Platform":
 # ---------------------------------------------------------------------------
 
 when defined(windows):
-  import os, disassembler
+  import os
 
   suite "WinRuntime Module - Windows live":
 
@@ -123,20 +119,6 @@ when defined(windows):
       let (resumed, rr) = winruntime.resumeAllThreads(selfPid)
       check rr.success
       check resumed >= 1
-
-    test "disassembleAtAddress reads from self memory":
-      if not isCapstoneAvailable():
-        skip()
-      let selfPid = int(os.getCurrentProcessId())
-      # Write known x86-64 instructions into a local buffer and disassemble.
-      # NOP (0x90) x 15 followed by RET (0xC3) is always valid x86-64.
-      var codeBuf: array[16, byte] = [
-        0x90'u8, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-        0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0xC3
-      ]
-      let codeAddr = cast[uint64](addr codeBuf[0])
-      let instrs = winruntime.disassembleAtAddress(selfPid, codeAddr, 3)
-      check instrs.len >= 1
 
     test "allocateRemoteMemory allocates a page in self":
       let selfPid = int(os.getCurrentProcessId())

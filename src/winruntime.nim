@@ -2,7 +2,7 @@
 # Provides higher-level operations for live process analysis and patching on Windows.
 # Depends on winprocess.nim for Win32 primitives. On non-Windows platforms all
 # procedures return a platform-not-supported error.
-import winprocess, disassembler, binary
+import winprocess
 
 type
   WinRuntimeResult* = object
@@ -89,27 +89,6 @@ proc allocateRemoteMemory*(pid: int, size: int): (uint64, WinRuntimeResult) =
   if not pr.success:
     return (0'u64, rtErr("allocateRemoteMemory: " & pr.msg))
   return (remoteAddr, rtOk())
-
-# ---------------------------------------------------------------------------
-# Disassembly at a live process address.
-# ---------------------------------------------------------------------------
-
-# Read count instructions from the target process starting at address.
-# Uses Capstone for disassembly. Returns an empty sequence on any error.
-proc disassembleAtAddress*(pid: int, address: uint64,
-                           count: int): seq[Instruction] =
-  if count <= 0:
-    return @[]
-  let readSize = count * 15
-  let (bytes, rr) = winprocess.readProcessMemory(pid, address, readSize)
-  if not rr.success or bytes.len == 0:
-    return @[]
-  let instrs = disassembleBytes(bytes, address, archX64)
-  if instrs.len == 0:
-    return @[]
-  if instrs.len <= count:
-    return instrs
-  return instrs[0 ..< count]
 
 # ---------------------------------------------------------------------------
 # Thread suspension helpers.
