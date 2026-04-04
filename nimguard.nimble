@@ -18,11 +18,6 @@ requires "nim >= 1.6.0"
 # Include directories for external bindings (modify if needed)
 installDirs = @["src"]
 
-# After installation, display usage information
-afterInstall:
-  echo "NimGuard has been installed successfully!"
-  echo "Run './nimguard --help' to get started."
-
 # Testing
 task test, "Run unit tests":
   exec "nim c -r --path:src tests/test_patcher.nim"
