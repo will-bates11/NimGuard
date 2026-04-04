@@ -67,7 +67,7 @@ when defined(linux):
   proc reapChild(pid: Pid) =
     discard posix.kill(pid, SIGKILL)
     var s: cint
-    discard waitpid(pid, addr s, 0)
+    discard waitpid(pid, s, 0)
 
   suite "Runtime Module - Linux live":
 
@@ -76,7 +76,7 @@ when defined(linux):
       defer: reapChild(pid)
 
       var status: cint
-      discard waitpid(pid, addr status, 0)
+      discard waitpid(pid, status, 0)
 
       let (regs, rr) = process.getRegisters(int(pid))
       require rr.success
@@ -101,7 +101,7 @@ when defined(linux):
       defer: reapChild(pid)
 
       var status: cint
-      discard waitpid(pid, addr status, 0)
+      discard waitpid(pid, status, 0)
 
       let (regs, rr) = process.getRegisters(int(pid))
       require rr.success
@@ -123,7 +123,7 @@ when defined(linux):
       defer: reapChild(pid)
 
       var status: cint
-      discard waitpid(pid, addr status, 0)
+      discard waitpid(pid, status, 0)
 
       let (regs, rr) = process.getRegisters(int(pid))
       require rr.success
@@ -152,7 +152,7 @@ when defined(linux):
       defer: reapChild(pid)
 
       var status: cint
-      discard waitpid(pid, addr status, 0)
+      discard waitpid(pid, status, 0)
 
       let (regs, rr) = process.getRegisters(int(pid))
       require rr.success
@@ -176,7 +176,7 @@ when defined(linux):
       defer: reapChild(pid)
 
       var status: cint
-      discard waitpid(pid, addr status, 0)
+      discard waitpid(pid, status, 0)
 
       # Collect up to 4 syscall events starting from the stopped child.
       let events = monitorSyscalls(int(pid), 4)

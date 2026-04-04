@@ -87,7 +87,7 @@ when defined(linux):
   proc reapChild(pid: Pid) =
     discard posix.kill(pid, SIGKILL)
     var s: cint
-    discard waitpid(pid, addr s, 0)
+    discard waitpid(pid, s, 0)
 
   suite "Process Module - Linux ptrace":
 
@@ -125,7 +125,7 @@ when defined(linux):
       defer: reapChild(pid)
 
       var status: cint
-      discard waitpid(pid, addr status, 0)
+      discard waitpid(pid, status, 0)
 
       let (regs, rr) = getRegisters(int(pid))
       check rr.success
@@ -139,7 +139,7 @@ when defined(linux):
       defer: reapChild(pid)
 
       var status: cint
-      discard waitpid(pid, addr status, 0)
+      discard waitpid(pid, status, 0)
 
       let (regs, rr) = getRegisters(int(pid))
       require rr.success
@@ -156,7 +156,7 @@ when defined(linux):
       defer: reapChild(pid)
 
       var status: cint
-      discard waitpid(pid, addr status, 0)
+      discard waitpid(pid, status, 0)
 
       let (regs, rr) = getRegisters(int(pid))
       require rr.success
@@ -182,7 +182,7 @@ when defined(linux):
       defer: reapChild(pid)
 
       var status: cint
-      discard waitpid(pid, addr status, 0)
+      discard waitpid(pid, status, 0)
 
       let (regs, rr) = getRegisters(int(pid))
       require rr.success
@@ -219,7 +219,7 @@ when defined(linux):
       defer: reapChild(pid)
 
       var status: cint
-      discard waitpid(pid, addr status, 0)
+      discard waitpid(pid, status, 0)
 
       let (regs0, rr0) = getRegisters(int(pid))
       require rr0.success
@@ -243,7 +243,7 @@ when defined(linux):
       defer: reapChild(pid)
 
       var status: cint
-      discard waitpid(pid, addr status, 0)
+      discard waitpid(pid, status, 0)
 
       let cr = continueExecution(int(pid))
       check cr.success

@@ -144,7 +144,7 @@ when defined(linux):
 
   proc waitForSignal*(pid: int): WaitResult =
     var status: cint = 0
-    let ret = waitpid(Pid(pid), addr status, 0)
+    let ret = waitpid(Pid(pid), status, 0)
     if ret == -1:
       return WaitResult(status: wsUnknown)
     if wIfExited(status):
