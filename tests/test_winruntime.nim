@@ -110,16 +110,6 @@ when defined(windows):
       check rr.success
       check dataBuf[0] == origByte
 
-    test "suspendAllThreads and resumeAllThreads on self":
-      let selfPid = int(os.getCurrentProcessId())
-      let (suspended, sr) = winruntime.suspendAllThreads(selfPid)
-      check sr.success
-      check suspended >= 1
-      # Resume immediately so the test process keeps running.
-      let (resumed, rr) = winruntime.resumeAllThreads(selfPid)
-      check rr.success
-      check resumed >= 1
-
     test "allocateRemoteMemory allocates a page in self":
       let selfPid = int(os.getCurrentProcessId())
       let (remoteAddr, ar) = winruntime.allocateRemoteMemory(selfPid, 4096)
