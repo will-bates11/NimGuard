@@ -1,5 +1,5 @@
 # NimGuard - Binary Analysis and Static Patching
-import rules, binary, disassembler, assembler
+import rules, binary, disassembler, assembler, emulator
 
 type
   BinaryAnalysis* = object
@@ -88,6 +88,51 @@ proc applyPatch*(binaryPath: string, functionName: string, patch: string): bool 
     echo "[-] Assembly failed for: ", patch
     return false
   return true
+
+# Test a patch in Unicorn emulation before writing to disk.
+# Reads srcPath, applies newBytes at offset in a temporary buffer, loads the
+# buffer into an emulator, and executes up to maxInstr instructions starting
+# at the patch site. Returns true if emulation ran without an immediate crash,
+# or if Unicorn is not installed (graceful degradation).
+proc testPatchInEmulator*(srcPath: string, offset: int,
+                          newBytes: seq[byte], arch: Architecture,
+                          maxInstr: int = 64): bool =
+  if not isUnicornAvailable():
+    return true
+
+  if newBytes.len == 0:
+    return false
+
+  var data: string
+  try:
+    data = readFile(srcPath)
+  except:
+    return false
+
+  if offset < 0 or offset + newBytes.len > data.len:
+    return false
+
+  # Apply the patch in a temporary in-memory buffer only.
+  var patched = newSeq[byte](data.len)
+  for i in 0 ..< data.len:
+    patched[i] = byte(data[i])
+  for i in 0 ..< newBytes.len:
+    patched[offset + i] = newBytes[i]
+
+  # Load patched buffer into emulator at a conventional base address.
+  let baseAddr = 0x00400000'u64
+  var ctx = createEmulator(arch)
+  defer: closeEmulator(ctx)
+  if ctx.engine == nil:
+    return true
+
+  if not ctx.loadMemory(baseAddr, patched):
+    return false
+
+  let startAddr = baseAddr + uint64(offset)
+  let endAddr   = baseAddr + uint64(patched.len)
+  let res = ctx.emulateRange(startAddr, endAddr, maxInstr)
+  res.success
 
 # Apply patches based on detected vulnerabilities and defined rules.
 # outputPath is optional; when non-empty it is recorded in the log for

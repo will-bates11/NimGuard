@@ -1,5 +1,5 @@
 # NimGuard - Unit Tests for Patcher and Rules Modules
-import unittest, os, patcher, rules, assembler, binary
+import unittest, os, patcher, rules, assembler, binary, emulator
 
 suite "Patcher Module Tests":
 
@@ -131,3 +131,50 @@ suite "Patcher Module Tests":
     let result = readFile(dstFile)
     check result.len == 8
     check byte(result[0]) == 0x90'u8
+
+suite "Emulation-Based Patch Testing":
+
+  test "testPatchInEmulator handles Unicorn availability gracefully":
+    # With Unicorn: returns false when the source file does not exist.
+    # Without Unicorn: returns true for any input (graceful degradation).
+    if isUnicornAvailable():
+      check testPatchInEmulator("no_such_file_graceful.bin", 0,
+                                @[0x90'u8], archX64) == false
+    else:
+      check testPatchInEmulator("any_binary", 0, @[0x90'u8], archX64) == true
+
+  test "testPatchInEmulator returns false for non-existent source file":
+    if not isUnicornAvailable():
+      skip()
+    check testPatchInEmulator("no_such_binary_xyz.bin", 0,
+                              @[0x90'u8], archX64) == false
+
+  test "testPatchInEmulator returns false for empty patch bytes":
+    if not isUnicornAvailable():
+      skip()
+    let srcFile = "test_emu_patch_src.bin"
+    defer: removeFile(srcFile)
+    writeFile(srcFile, newString(16))
+    check testPatchInEmulator(srcFile, 0, @[], archX64) == false
+
+  test "testPatchInEmulator returns false when offset is out of range":
+    if not isUnicornAvailable():
+      skip()
+    let srcFile = "test_emu_oob.bin"
+    defer: removeFile(srcFile)
+    writeFile(srcFile, newString(4))
+    check testPatchInEmulator(srcFile, 100, @[0x90'u8], archX64) == false
+
+  test "testPatchInEmulator executes a NOP sled patch without error":
+    if not isUnicornAvailable():
+      skip()
+    let srcFile = "test_emu_nop.bin"
+    defer: removeFile(srcFile)
+    # Write a page of NOP bytes so emulation has valid instructions to run.
+    var buf = newString(0x1000)
+    for i in 0 ..< 0x1000:
+      buf[i] = char(0x90'u8)
+    writeFile(srcFile, buf)
+    # Patch the first 4 bytes with NOPs and emulate from offset 0.
+    check testPatchInEmulator(srcFile, 0, @[0x90'u8, 0x90'u8, 0x90'u8,
+                                            0x90'u8], archX64, 4) == true

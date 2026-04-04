@@ -39,6 +39,23 @@ jobs:
             sudo ldconfig
           fi
 
+      - name: Install Unicorn
+        run: |
+          if sudo apt-get install -y libunicorn-dev 2>/dev/null; then
+            echo "Installed libunicorn-dev from apt"
+          else
+            echo "Building Unicorn from source"
+            sudo apt-get install -y cmake build-essential python3
+            git clone --depth 1 https://github.com/unicorn-engine/unicorn.git /tmp/unicorn
+            cmake -S /tmp/unicorn -B /tmp/unicorn/build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DBUILD_SHARED_LIBS=ON \
+              -G "Unix Makefiles"
+            cmake --build /tmp/unicorn/build -j$(nproc)
+            sudo cmake --install /tmp/unicorn/build
+            sudo ldconfig
+          fi
+
       - name: Build NimGuard
         run: nim c -d:release --path:src -o:nimguard src/main.nim
 
@@ -53,3 +70,6 @@ jobs:
 
       - name: Run assembler tests
         run: nim c -r --path:src tests/test_assembler.nim
+
+      - name: Run emulator tests
+        run: nim c -r --path:src tests/test_emulator.nim
