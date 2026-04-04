@@ -21,6 +21,7 @@ installDirs = @["src"]
 # Testing
 task test, "Run unit tests":
   exec "nim c -r --path:src tests/test_patcher.nim"
+  exec "nim c -r --path:src tests/test_binary.nim"
 
 # Custom build task
 task build, "Compile NimGuard":

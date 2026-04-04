@@ -1,9 +1,9 @@
-# NimGuard - Dynamic Binary Patching & Instrumentation Tool
-import os, parseopt, strutils, patcher, instrumentation, rules
+# NimGuard - Dynamic Binary Patching and Instrumentation Tool
+import parseopt, strutils, patcher, instrumentation, rules, binary
 
 proc showHelp() =
   echo """
-  NimGuard - Dynamic Binary Patching & Instrumentation Tool
+  NimGuard - Dynamic Binary Patching and Instrumentation Tool
   Usage:
     nimguard <binary> [options]
 
@@ -19,13 +19,34 @@ proc showHelp() =
     ./nimguard target_binary.exe --patch --rules custom_rules.json
   """
 
+proc formatFlags(flags: SectionFlags): string =
+  result = ""
+  result.add(if flags.readable:   "r" else: "-")
+  result.add(if flags.writable:   "w" else: "-")
+  result.add(if flags.executable: "x" else: "-")
+
+proc printAnalysis(analysis: BinaryAnalysis) =
+  echo "[+] Format:      ", $analysis.format
+  echo "[+] Architecture: ", $analysis.architecture
+  echo "[+] Entry point:  0x", toHex(analysis.entryPoint, 16)
+  if analysis.sections.len == 0:
+    echo "[+] Sections:     (none)"
+  else:
+    echo "[+] Sections (", analysis.sections.len, "):"
+    for s in analysis.sections:
+      let name = if s.name == "": "(unnamed)" else: s.name
+      echo "    ", name.alignLeft(12), " vaddr=0x", toHex(s.virtualAddress, 16),
+           " offset=0x", toHex(s.fileOffset, 8),
+           " size=0x", toHex(s.size, 8),
+           " [", formatFlags(s.flags), "]"
+  echo "[+] Potential issues: ", analysis.vulnerabilities.len
+
 proc main() =
   var p = initOptParser()
   var binaryPath: string
   var analyze, patch, monitor: bool
   var ruleFile: string
 
-  # Parse command-line arguments
   while true:
     p.next()
     case p.kind
@@ -59,30 +80,25 @@ proc main() =
 
   echo "[+] Processing binary: ", binaryPath
 
-  # Binary Analysis
   if analyze:
     echo "[+] Running analysis on ", binaryPath
     let analysis = analyzeBinary(binaryPath)
-    echo "[+] Analysis complete. Found ", analysis.vulnerabilities.len, " potential issues."
+    printAnalysis(analysis)
 
-  # Load patching rules
   var loadedRules: seq[PatchRule]
   if ruleFile != "":
     echo "[+] Loading rules from: ", ruleFile
     loadedRules = loadRules(ruleFile)
   else:
-    echo "[+] Using default rule set."
     loadedRules = loadDefaultRules()
 
-  # Apply Patches
   if patch:
     echo "[+] Applying patches..."
     if applyPatches(binaryPath, loadedRules):
-      echo "[+] Patching completed successfully!"
+      echo "[+] Patching completed successfully."
     else:
-      echo "[-] Patching failed."
+      echo "[-] No patches applied."
 
-  # Enable Runtime Instrumentation
   if monitor:
     echo "[+] Enabling runtime monitoring..."
     setupHooks(binaryPath)
