@@ -1,6 +1,6 @@
 # NimGuard - Dynamic Binary Patching & Instrumentation Tool
 
-version       = "0.5.0"
+version       = "0.6.0"
 author        = "William Bates"
 description   = "Dynamic binary patching and instrumentation tool for legacy systems."
 license       = "MIT"
@@ -22,16 +22,21 @@ requires "nim >= 1.6.0"
 #     Linux:   sudo apt-get install libkeystone-dev  (or build from source)
 #     macOS:   brew install keystone
 #     Windows: download keystone.dll from https://www.keystone-engine.org/
+#
 #   Unicorn  (Phase 4, emulation):
 #     Linux:   sudo apt-get install libunicorn-dev
 #     macOS:   brew install unicorn
 #     Windows: download unicorn.dll from https://www.unicorn-engine.org/
 #
-#   ptrace   (Phase 5, runtime instrumentation):
+#   ptrace   (Phase 5, runtime instrumentation, Linux only):
 #     Linux kernel built-in; no extra packages needed.
 #     ptrace_scope may need to be 0 for PTRACE_ATTACH tests:
 #       echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
 #     Non-Linux: all process/runtime procs return a platform-not-supported error.
+#
+#   Win32 API (Phase 6, runtime instrumentation, Windows only):
+#     Windows kernel built-in; no extra packages needed.
+#     Non-Windows: all winprocess/winruntime procs return a platform-not-supported error.
 
 # Include directories for external bindings
 installDirs = @["src"]
@@ -45,6 +50,13 @@ task test, "Run unit tests":
   exec "nim c -r --path:src tests/test_emulator.nim"
   exec "nim c -r --path:src tests/test_process.nim"
   exec "nim c -r --path:src tests/test_runtime.nim"
+  exec "nim c -r --path:src tests/test_winprocess.nim"
+  exec "nim c -r --path:src tests/test_winruntime.nim"
+
+# Run only the Windows-specific tests
+task test_windows, "Run Windows process and runtime tests":
+  exec "nim c -r --path:src tests/test_winprocess.nim"
+  exec "nim c -r --path:src tests/test_winruntime.nim"
 
 # Custom build task
 task build, "Compile NimGuard":
