@@ -1,5 +1,5 @@
-# NimGuard - Unit Tests for Patcher Module
-import unittest, patcher, rules
+# NimGuard - Unit Tests for Patcher and Rules Modules
+import unittest, os, patcher, rules
 
 suite "Patcher Module Tests":
 
@@ -16,21 +16,35 @@ suite "Patcher Module Tests":
     check defaultRules.len > 0
     check defaultRules[0].identifier == "checkAuth"
 
-  test "Applying a patch succeeds":
-    var dummyRules = @[
+  test "Applying a patch succeeds when rule matches vulnerability":
+    # Use an identifier that matches the stub's hardcoded vulnerabilities
+    let matchingRules = @[
       PatchRule(
-        identifier: "testFunction",
-        description: "Patch test function",
-        condition: "if function testFunction() is called",
-        patch: "mov eax, 0; ret"
+        identifier: "checkAuth",
+        description: "Patch checkAuth function",
+        condition: "if function checkAuth() is called",
+        patch: "mov eax, 1; ret"
       )
     ]
-    let success = applyPatches("dummy_binary.exe", dummyRules)
+    let success = applyPatches("dummy_binary.exe", matchingRules)
     check success == true
 
+  test "Applying patches returns false when no rules match":
+    let nonMatchingRules = @[
+      PatchRule(
+        identifier: "nonExistentFunction",
+        description: "Patch that will never match",
+        condition: "never",
+        patch: "nop"
+      )
+    ]
+    let success = applyPatches("dummy_binary.exe", nonMatchingRules)
+    check success == false
+
   test "Loading custom rules from JSON":
-    # Create a temporary JSON rules file
     let tempFile = "test_rules.json"
+    defer: removeFile(tempFile)
+
     let jsonData = """
     {
       "rules": [
@@ -45,13 +59,19 @@ suite "Patcher Module Tests":
     """
     writeFile(tempFile, jsonData)
 
-    # Load rules and verify
     let customRules = loadRules(tempFile)
     check customRules.len == 1
     check customRules[0].identifier == "dummyPatch"
 
-    # Cleanup test file
-    removeFile(tempFile)
+  test "Loading rules from non-existent file returns empty seq":
+    let result = loadRules("does_not_exist_12345.json")
+    check result.len == 0
 
-when isMainModule:
-  runAllTests()
+  test "Loading rules from malformed JSON returns empty seq":
+    let tempFile = "test_malformed_rules.json"
+    defer: removeFile(tempFile)
+
+    writeFile(tempFile, "{ this is not valid json !!!")
+    let result = loadRules(tempFile)
+    check result.len == 0
+

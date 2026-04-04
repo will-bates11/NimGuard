@@ -2,14 +2,14 @@
 import os, json, strutils
 
 type
-  PatchRule = object
-    identifier: string  # Name of function or code section to patch
-    description: string # Explanation of the patch
-    condition: string   # Condition triggering the patch (simplified for now)
-    patch: string       # Assembly or pseudo-code patch instructions
+  PatchRule* = object
+    identifier*: string  # Name of function or code section to patch
+    description*: string # Explanation of the patch
+    condition*: string   # Condition triggering the patch (simplified for now)
+    patch*: string       # Assembly or pseudo-code patch instructions
 
 # Load predefined patching rules
-proc loadDefaultRules(): seq[PatchRule] =
+proc loadDefaultRules*(): seq[PatchRule] =
   result = @[
     PatchRule(
       identifier: "checkAuth",
@@ -26,7 +26,7 @@ proc loadDefaultRules(): seq[PatchRule] =
   ]
 
 # Load custom patching rules from a JSON file
-proc loadRules(filePath: string): seq[PatchRule] =
+proc loadRules*(filePath: string): seq[PatchRule] =
   if not fileExists(filePath):
     echo "[-] Error: Rules file not found: ", filePath
     return @[]
@@ -42,5 +42,5 @@ proc loadRules(filePath: string): seq[PatchRule] =
         patch: rule["patch"].getStr()
       ))
     echo "[+] Loaded ", result.len, " rules from file."
-  except:
-    echo "[-] Error: Failed to parse rules file."
+  except CatchableError as e:
+    echo "[-] Error: Failed to parse rules file: ", e.msg

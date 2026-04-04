@@ -9,30 +9,18 @@ srcDir        = "src"
 # Specify required Nim version
 requires "nim >= 1.6.0"
 
-# Dependencies - Capstone, Keystone, and Unicorn for binary analysis, patching, and emulation
-requires "https://github.com/PMunch/nim-capstone"
-requires "https://github.com/PMunch/nim-keystone"
-requires "https://github.com/PMunch/nim-unicorn"
-
-# Additional system dependencies (if applicable)
-# Ensure that Capstone, Keystone, and Unicorn shared libraries are installed on the system.
-
-# Define an executable
-bin           = @["nimguard"]
+# External C library dependencies (must be installed at the OS level):
+#   Capstone:  https://www.capstone-engine.org/
+#   Keystone:  https://www.keystone-engine.org/
+#   Unicorn:   https://www.unicorn-engine.org/
+# Nim FFI wrappers for these libraries will be added in Phase 2.
 
 # Compiler Flags
-# Enable optimizations and debugging symbols
-compile "c"
 passL "-O2"
 passC "-g"
 
 # Include directories for external bindings (modify if needed)
-installDirs   = @["src"]
-
-# Hooks
-beforeInstall:
-  echo "Building NimGuard..."
-  exec "nimble build"
+installDirs = @["src"]
 
 # After installation, display usage information
 afterInstall:
@@ -41,8 +29,8 @@ afterInstall:
 
 # Testing
 task test, "Run unit tests":
-  exec "nimble test"
+  exec "nim c -r --path:src tests/test_patcher.nim"
 
 # Custom build task
 task build, "Compile NimGuard":
-  exec "nim c -d:release -o:nimguard src/main.nim"
+  exec "nim c -d:release --path:src -o:nimguard src/main.nim"

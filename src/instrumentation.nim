@@ -1,5 +1,5 @@
 # NimGuard - Runtime Instrumentation & Monitoring
-import os, asyncdispatch, patcher
+import patcher
 
 type
   HookType = enum
@@ -28,7 +28,7 @@ proc registerHook(hook: InstrumentationHook) =
   echo "[+] Hook registered for function: ", hook.functionName
 
 # Setup function call hooks
-proc setupHooks(binaryPath: string) =
+proc setupHooks*(binaryPath: string) =
   echo "[+] Setting up hooks for: ", binaryPath
 
   # Example: Hooking functions detected in analysis

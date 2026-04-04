@@ -16,7 +16,7 @@ proc showHelp() =
 
   Example:
     ./nimguard target_binary.exe --analyze
-    ./nimguard target_binary.exe --patch --rules custom_rules.yaml
+    ./nimguard target_binary.exe --patch --rules custom_rules.json
   """
 
 proc main() =
@@ -26,26 +26,31 @@ proc main() =
   var ruleFile: string
 
   # Parse command-line arguments
-  while p.next() != "":
-    case p.key
-    of "":
+  while true:
+    p.next()
+    case p.kind
+    of cmdEnd:
+      break
+    of cmdArgument:
       if binaryPath == "":
         binaryPath = p.key
-    of "--help":
-      showHelp()
-      return
-    of "--analyze":
-      analyze = true
-    of "--patch":
-      patch = true
-    of "--monitor":
-      monitor = true
-    of "--rules":
-      ruleFile = p.val
-    else:
-      echo "Unknown option: ", p.key
-      showHelp()
-      return
+    of cmdLongOption, cmdShortOption:
+      case p.key
+      of "help":
+        showHelp()
+        return
+      of "analyze":
+        analyze = true
+      of "patch":
+        patch = true
+      of "monitor":
+        monitor = true
+      of "rules":
+        ruleFile = p.val
+      else:
+        echo "Unknown option: --", p.key
+        showHelp()
+        return
 
   if binaryPath == "":
     echo "Error: No binary specified."
