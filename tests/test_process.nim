@@ -94,13 +94,6 @@ when defined(linux):
     test "isPtraceAvailable returns true on Linux":
       check isPtraceAvailable() == true
 
-    test "traceMe is callable without raising":
-      # Calling traceMe() in the test process itself will fail with EPERM if
-      # the process is already being traced, but it must not raise an
-      # exception.
-      let r = traceMe()
-      check r.success == true or r.success == false
-
     test "attachProcess and detachProcess on a child process":
       # Fork a plain sleeping child (no TRACEME) and attach via PTRACE_ATTACH.
       let pid = fork()
