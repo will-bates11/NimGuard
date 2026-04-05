@@ -1,0 +1,4 @@
+[+] Processing binary: C:\Windows\System32\OpenSSH\ssh.exe
+[+] Emulating .text section of C:\Windows\System32\OpenSSH\ssh.exe
+[+] Emulating up to 256 instructions at 0x0000000000001000
+[-] Emulation stopped: uc_emu_start error code: 6

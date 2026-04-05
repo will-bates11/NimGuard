@@ -1,0 +1,100 @@
+[+] Processing binary: C:\Windows\System32\OpenSSH\ssh.exe
+[+] Disassembly of .text section:
+    0x0000000000001000  sub        rsp, 0x48
+    0x0000000000001004  mov        r11, rcx
+    0x0000000000001007  mov        rcx, qword ptr [rsp + 0x80]
+    0x000000000000100F  test       rcx, rcx
+    0x0000000000001012  je         0x107c
+    0x0000000000001014  mov        r10, qword ptr [rsp + 0x70]
+    0x0000000000001019  mov        eax, edx
+    0x000000000000101B  test       edx, edx
+    0x000000000000101D  je         0x104c
+    0x000000000000101F  cmp        eax, 1
+    0x0000000000001022  jne        0x1052
+    0x0000000000001024  test       r8b, r8b
+    0x0000000000001027  je         0x103b
+    0x0000000000001029  movzx      eax, r8b
+    0x000000000000102D  inc        eax
+    0x000000000000102F  mov        qword ptr [rcx + 0x10], r9
+    0x0000000000001033  mov        dword ptr [rcx], eax
+    0x0000000000001035  mov        qword ptr [rcx + 0x18], r10
+    0x0000000000001039  jmp        0x1052
+    0x000000000000103B  mov        eax, 0x100
+    0x0000000000001040  mov        qword ptr [rcx + 0x10], r9
+    0x0000000000001044  mov        dword ptr [rcx], eax
+    0x0000000000001046  mov        qword ptr [rcx + 0x18], r10
+    0x000000000000104A  jmp        0x1052
+    0x000000000000104C  mov        dword ptr [rcx], 0
+    0x0000000000001052  mov        rax, qword ptr [rcx + 0x28]
+    0x0000000000001056  test       rax, rax
+    0x0000000000001059  je         0x107c
+    0x000000000000105B  mov        rcx, qword ptr [rcx + 0x30]
+    0x000000000000105F  mov        qword ptr [rsp + 0x30], rcx
+    0x0000000000001064  mov        rcx, qword ptr [rsp + 0x78]
+    0x0000000000001069  mov        qword ptr [rsp + 0x28], rcx
+    0x000000000000106E  mov        rcx, r11
+    0x0000000000001071  mov        qword ptr [rsp + 0x20], r10
+    0x0000000000001076  call       qword ptr [rip + 0xd7cb4]
+    0x000000000000107C  add        rsp, 0x48
+    0x0000000000001080  ret
+    0x0000000000001081  int3
+    0x0000000000001082  int3
+    0x0000000000001083  int3
+    0x0000000000001084  int3
+    0x0000000000001085  int3
+    0x0000000000001086  int3
+    0x0000000000001087  int3
+    0x0000000000001088  int3
+    0x0000000000001089  int3
+    0x000000000000108A  int3
+    0x000000000000108B  int3
+    0x000000000000108C  int3
+    0x000000000000108D  int3
+    0x000000000000108E  int3
+    0x000000000000108F  int3
+    0x0000000000001090  push       rbx
+    0x0000000000001092  sub        rsp, 0x50
+    0x0000000000001096  mov        rax, qword ptr [rip + 0x127fa3]
+    0x000000000000109D  xor        rax, rsp
+    0x00000000000010A0  mov        qword ptr [rsp + 0x48], rax
+    0x00000000000010A5  cmp        qword ptr [rip + 0x128d73], 0
+    0x00000000000010AD  mov        rax, qword ptr [rip + 0x128d54]
+    0x00000000000010B4  movups     xmm0, xmmword ptr [rax - 0x10]
+    0x00000000000010B8  movups     xmmword ptr [rsp + 0x38], xmm0
+    0x00000000000010BD  je         0x10c6
+    0x00000000000010BF  mov        ecx, 5
+    0x00000000000010C4  int        0x29
+    0x00000000000010C6  xorps      xmm0, xmm0
+    0x00000000000010C9  lea        r9, [rip + 0x128d50]
+    0x00000000000010D0  lea        r8, [rip + 0x128d29]
+    0x00000000000010D7  lea        rdx, [rip - 0xde]
+    0x00000000000010DE  lea        rcx, [rsp + 0x38]
+    0x00000000000010E3  movdqu     xmmword ptr [rip + 0x128d3d], xmm0
+    0x00000000000010EB  call       qword ptr [rip + 0xd6fb7]
+    0x00000000000010F1  mov        ebx, eax
+    0x00000000000010F3  test       eax, eax
+    0x00000000000010F5  je         0x110d
+    0x00000000000010F7  test       eax, eax
+    0x00000000000010F9  jle        0x1195
+    0x00000000000010FF  movzx      ebx, bx
+    0x0000000000001102  or         ebx, 0x80070000
+    0x0000000000001108  jmp        0x1195
+    0x000000000000110D  mov        qword ptr [rsp + 0x60], rsi
+    0x0000000000001112  lea        r8, [rsp + 0x30]
+    0x0000000000001117  mov        qword ptr [rsp + 0x68], rdi
+    0x000000000000111C  lea        rdx, [rip + 0x10e94d]
+    0x0000000000001123  mov        rdi, qword ptr [rip + 0x128cde]
+    0x000000000000112A  xor        ecx, ecx
+    0x000000000000112C  movzx      esi, word ptr [rdi]
+    0x000000000000112F  call       qword ptr [rip + 0xd730b]
+    0x0000000000001135  test       eax, eax
+    0x0000000000001137  jne        0x1151
+    0x0000000000001139  lea        r8, [rsp + 0x30]
+    0x000000000000113E  xor        ecx, ecx
+    0x0000000000001140  lea        rdx, [rip + 0x10e979]
+    0x0000000000001147  call       qword ptr [rip + 0xd72f3]
+    0x000000000000114D  test       eax, eax
+    0x000000000000114F  je         0x118b
+    0x0000000000001151  mov        rcx, qword ptr [rsp + 0x30]
+    0x0000000000001156  lea        rdx, [rip + 0x10e983]
+    0x000000000000115D  call       qword ptr [rip + 0xd73e5]
