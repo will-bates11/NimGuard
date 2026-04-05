@@ -173,6 +173,7 @@ proc runAttachMode(pid: int, injectSpec: string, bpAddrStr: string,
     let hooked = setupHooks(monitorBinary, pid)
     if hooked.len > 0:
       echo "[+] ", hooked.len, " breakpoint(s) injected."
+      runMonitorLoop(pid)
     else:
       echo "[!] No breakpoints injected (no dangerous CALL sites found or Capstone unavailable)."
 

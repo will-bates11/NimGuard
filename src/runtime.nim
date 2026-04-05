@@ -4,7 +4,7 @@
 # On other platforms, all procedures return a platform-not-supported error.
 import disassembler, binary
 when defined(linux):
-  import times, os
+  import times
 
 when defined(linux):
   import process
@@ -113,6 +113,22 @@ proc removeBreakpoint*(pid: int, bp: Breakpoint): RuntimeResult =
 # Memory patching.
 # ---------------------------------------------------------------------------
 
+# Detect architecture of a running process from its executable on disk.
+# Falls back to archX64 when the path cannot be read or parsed.
+proc detectProcessArch*(pid: int): Architecture =
+  when defined(linux):
+    let exePath = "/proc/" & $pid & "/exe"
+    let info = parseBinary(exePath)
+    if info.format != bfUnknown:
+      return info.architecture
+    return archX64
+  elif defined(windows):
+    # IsWow64Process tells us if a 32-bit process is running on 64-bit Windows.
+    # For simplicity, default to x64 on Windows targets.
+    return archX64
+  else:
+    return archX64
+
 proc patchProcessMemory*(pid: int, address: uint64,
                          bytes: seq[byte]): RuntimeResult =
   if bytes.len == 0:
@@ -126,6 +142,14 @@ proc patchProcessMemory*(pid: int, address: uint64,
 
 proc hookFunction*(pid: int, address: uint64,
                    hookAddress: uint64): (seq[byte], RuntimeResult) =
+  # hookFunction only supports x86 and x86-64 JMP encodings.
+  # On ARM or AArch64 targets the caller must not use this procedure;
+  # writing x86 JMP bytes into an ARM binary will corrupt it.
+  let targetArch = detectProcessArch(pid)
+  if targetArch notin [archX86, archX64]:
+    return (@[], rtErr("hookFunction: JMP hook encoding is x86/x64 only; " &
+                       "target architecture is " & $targetArch))
+
   # Build a JMP sequence. Try rel32 (5 bytes) first; fall back to
   # absolute indirect JMP (14 bytes: FF 25 00 00 00 00 + 8-byte addr)
   # when the displacement overflows a signed 32-bit value.
@@ -182,22 +206,6 @@ proc hookFunction*(pid: int, address: uint64,
 # Disassembly at a live process address.
 # ---------------------------------------------------------------------------
 
-# Detect architecture of a running process from its executable on disk.
-# Falls back to archX64 when the path cannot be read or parsed.
-proc detectProcessArch*(pid: int): Architecture =
-  when defined(linux):
-    let exePath = "/proc/" & $pid & "/exe"
-    let info = parseBinary(exePath)
-    if info.format != bfUnknown:
-      return info.architecture
-    return archX64
-  elif defined(windows):
-    # IsWow64Process tells us if a 32-bit process is running on 64-bit Windows.
-    # For simplicity, default to x64 on Windows targets.
-    return archX64
-  else:
-    return archX64
-
 proc disassembleAtAddress*(pid: int, address: uint64,
                            count: int,
                            arch: Architecture = archX64): seq[Instruction] =
@@ -245,20 +253,9 @@ proc monitorSyscalls*(pid: int, maxSyscalls: int = 1000,
       let sr = process.stepToSyscall(pid)
       if not sr.success:
         break
-      # Poll with WNOHANG so the timeout check above runs on each iteration.
-      var wr = process.waitForSignalNonBlock(pid)
-      var pollMs = 0
-      while wr.status == wsRunning:
-        if timeoutMs > 0 and
-           int64(epochTime() * 1000.0) - startMs >= int64(timeoutMs):
-          break
-        sleep(1)
-        pollMs += 1
-        wr = process.waitForSignalNonBlock(pid)
-      if wr.status == wsRunning:
-        break  # timed out waiting for process stop
-      if wr.status == wsExited or wr.status == wsSignaled:
-        break
+      # Block until the process stops at the next syscall boundary.
+      # Using a blocking waitpid avoids the busy-poll sleep loop.
+      let wr = process.waitForSignal(pid)
       if wr.status != wsStopped:
         break
       let (regs, gr) = process.getRegisters(pid)

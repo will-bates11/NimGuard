@@ -60,6 +60,10 @@ Same pattern as the Capstone layer. `bindings/keystone.nim` lazy-loads `libkeyst
 
 `bindings/unicorn.nim` lazy-loads `libunicorn`. `emulator.nim` provides `createEmulator`, `closeEmulator`, `loadBinary`, `emulateRange`, and `isUnicornAvailable`. Emulator contexts map the binary's `.text` section into Unicorn memory and run up to a configurable instruction count.
 
+### ARM support
+
+Binary parsing and disassembly support ARM and AArch64 via Capstone. `makeNops()` in `assembler.nim` generates correct NOP byte sequences for ARM (4-byte `MOV R0,R0`), ARM Thumb (2-byte `0x00 0xBF`), and AArch64 (4-byte `NOP`). **Patching and runtime hooking (`hookFunction`) are currently x86/x64 only.** Attempting to use `hookFunction` on an ARM target returns an error rather than silently writing x86 JMP bytes into an ARM binary.
+
 ### process.nim
 
 Wraps the Linux `ptrace(2)` syscall. Provides `attachProcess`, `detachProcess`, `readProcessMemory`, `writeProcessMemory`, `getRegisters`, `setRegisters`, `injectBreakpoint`, `removeBreakpoint`, and `traceSyscalls`. On non-Linux platforms all procedures return a `pePlatform` error without performing any action.

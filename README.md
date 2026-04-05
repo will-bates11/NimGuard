@@ -173,6 +173,16 @@ Register pre-execution hooks for functions flagged in analysis:
 
 Attach to a running process (Linux and Windows only):
 
+> **Note (Linux):** On most Linux distributions, ptrace is restricted by
+> default. To attach to arbitrary processes, you may need to run:
+> ```bash
+> echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
+> ```
+> or run NimGuard with `sudo`. The restriction is enforced by the Yama
+> security module (`/proc/sys/kernel/yama/ptrace_scope`). A value of `0`
+> allows any process to be traced; a value of `1` (the common default)
+> restricts ptrace to parent/child relationships.
+
 ```bash
 ./nimguard --attach <pid>
 ```

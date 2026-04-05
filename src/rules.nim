@@ -8,20 +8,28 @@ type
     condition*: string   # Condition triggering the patch (simplified for now)
     patch*: string       # Assembly or pseudo-code patch instructions
 
-# Load predefined patching rules
+# Load predefined patching rules targeting real unsafe C library functions.
+# These identifiers match the names detected by findDangerousCallSites() and
+# scanImportStrings() in disassembler.nim.
 proc loadDefaultRules*(): seq[PatchRule] =
   result = @[
     PatchRule(
-      identifier: "checkAuth",
-      description: "Bypass authentication function",
-      condition: "if function checkAuth() is called",
-      patch: "mov eax, 1; ret"
+      identifier: "strcpy",
+      description: "NOP out strcpy call site (unsafe unbounded string copy)",
+      condition: "if strcpy is called",
+      patch: "nop; nop; nop; nop; nop"
     ),
     PatchRule(
-      identifier: "handleUserInput",
-      description: "Sanitize user input handling function",
-      condition: "if function handleUserInput() receives input",
-      patch: "xor eax, eax; nop"
+      identifier: "gets",
+      description: "NOP out gets call site (gets is always unsafe)",
+      condition: "if gets is called",
+      patch: "nop; nop; nop; nop; nop"
+    ),
+    PatchRule(
+      identifier: "sprintf",
+      description: "NOP out sprintf call site (unsafe unbounded format output)",
+      condition: "if sprintf is called",
+      patch: "nop; nop; nop; nop; nop"
     )
   ]
 

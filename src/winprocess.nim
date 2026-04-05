@@ -113,10 +113,15 @@ when defined(windows):
       tpDeltaPri:         int32
       dwFlags:            DWORD
 
-  # x86-64 CONTEXT structure (simplified - the fields we need).
-  # The full CONTEXT is 1232 bytes. We map just the fields we use after the
-  # mandatory header fields. Using a flat byte buffer avoids the complex
-  # union layout; register offsets are derived from the Windows SDK spec.
+  # x86-64 CONTEXT structure (Windows SDK 10.0, x64 target).
+  # The full CONTEXT struct is exactly 1232 bytes on x64 Windows (SDK 10.0).
+  # This layout matches the struct defined in <winnt.h> for AMD64. The
+  # general-purpose register offsets below are derived from that header.
+  # ARM64 Windows uses a different CONTEXT layout and size; this struct
+  # must not be used for ARM64 targets.
+  when not defined(amd64):
+    {.warning: "CONTEXT struct size is hardcoded for x64 (1232 bytes, SDK 10.0). " &
+               "Non-x64 Windows targets require a different CONTEXT layout.".}
   type
     NimContext64 {.pure.} = object
       P1Home:          uint64  # offset 0

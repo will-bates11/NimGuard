@@ -15,7 +15,7 @@ suite "Patcher Module Tests":
   test "Default rules are loaded correctly":
     let defaultRules = loadDefaultRules()
     check defaultRules.len > 0
-    check defaultRules[0].identifier == "checkAuth"
+    check defaultRules[0].identifier == "strcpy"
 
   test "applyPatch returns true for a valid instruction":
     # With Keystone: assembles the instruction and returns true.

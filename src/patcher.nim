@@ -1,5 +1,5 @@
 # NimGuard - Binary Analysis and Static Patching
-import strutils
+import strutils, os
 import rules, binary, disassembler, assembler, emulator
 
 type
@@ -60,10 +60,20 @@ proc patchBinaryAtOffset*(srcPath: string, dstPath: string,
     return false
   for i in 0 ..< newBytes.len:
     data[offset + i] = char(newBytes[i])
+  # Write to a temp file first, then atomically rename over the destination.
+  # This prevents a partial write from corrupting the binary if the process
+  # is interrupted mid-write.
+  let tmpPath = dstPath & ".nimguard_tmp"
   try:
-    writeFile(dstPath, data)
+    writeFile(tmpPath, data)
+  except:
+    discard tryRemoveFile(tmpPath)
+    return false
+  try:
+    moveFile(tmpPath, dstPath)
     return true
   except:
+    discard tryRemoveFile(tmpPath)
     return false
 
 # Assemble asmStr using Keystone and patch the binary at the given offset.
@@ -158,10 +168,13 @@ proc applyPatches*(binaryPath: string, rules: seq[PatchRule],
   # binary there first so we write into the output, not the source.
   let patchTarget = if outputPath != "": outputPath else: binaryPath
   if outputPath != "" and outputPath != binaryPath:
+    let tmpOut = outputPath & ".nimguard_tmp"
     try:
-      writeFile(outputPath, readFile(binaryPath))
+      writeFile(tmpOut, readFile(binaryPath))
+      moveFile(tmpOut, outputPath)
       echo "[+] Output path: ", outputPath
     except CatchableError as e:
+      discard tryRemoveFile(tmpOut)
       echo "[-] Failed to create output file: ", e.msg
       return false
 
