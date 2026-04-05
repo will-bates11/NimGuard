@@ -1,0 +1,25 @@
+C:\Users\wbate\OneDrive\Desktop\Projects\NimGuard> start notepad.exe
+C:\Users\wbate\OneDrive\Desktop\Projects\NimGuard> for /f "tokens=2" %p in ('tasklist /fi "imagename eq notepad.exe" /nh') do @echo PID: %p
+PID: 26176
+C:\Users\wbate\OneDrive\Desktop\Projects\NimGuard> powershell -command "(Get-Process notepad).Modules[0].BaseAddress.ToString('X')"
+7FF682750000
+C:\Users\wbate\OneDrive\Desktop\Projects\NimGuard> nimguard.exe --inject 0x7FF682751000:9090 --attach 26176
+[+] Attaching to PID 26176...
+[+] Attached.
+[+] Injecting 2 byte(s) at 0x00007FF682751000
+[+] Memory patched.
+[+] Detached from PID 26176
+
+Notes:
+  - 0x7FF682751000 is the base load address of notepad.exe plus 0x1000,
+    which lands at the start of the .text section.
+  - Two NOP bytes (0x90 0x90) are written via WriteProcessMemory. This is a
+    benign test: the first two bytes of the .text section are overwritten, but
+    the instruction boundary is preserved because we write exactly two bytes
+    aligned to the section start.
+  - In a real hardening workflow you would target a specific call site returned
+    by --analyze or --disasm, not an arbitrary offset.
+  - ASLR is active: the base address will differ between runs. Use the
+    powershell command above (or tasklist /m) to locate the current base.
+
+Platform: Windows 11, nimguard.exe x64

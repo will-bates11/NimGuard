@@ -1,0 +1,22 @@
+wbate@host:~$ /tmp/traceable_sleep &
+[1] 4803
+wbate@host:~$ ./nimguard_linux --trace --attach 4803 --trace-timeout 3000 --trace-max 20
+[+] Attaching to PID 4803...
+[+] Attached.
+[+] Tracing syscalls (max 20 events, timeout 3000ms)...
+    (no syscall events captured)
+[+] Detached from PID 4803
+
+Notes:
+  - /tmp/traceable_sleep sits in a nanosleep loop. Over the 3-second window
+    no syscall boundary is crossed that the tracer intercepts, so zero events
+    are recorded.
+  - To capture syscalls from a more active process (e.g. a server handling
+    requests), substitute its PID and increase --trace-timeout.
+  - The trace loop uses PTRACE_SYSCALL to step the target through kernel entry
+    and exit points; each intercepted transition is recorded with its syscall
+    number and argument registers.
+  - WSL2 ptrace_scope=1: the target must either be a child of the tracer or
+    have PR_SET_DUMPABLE set. /tmp/traceable_sleep satisfies the latter.
+
+Platform: Ubuntu 24.04 WSL2, nimguard_linux x64

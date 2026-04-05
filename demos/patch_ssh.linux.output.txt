@@ -1,0 +1,72 @@
+wbate@host:~$ cp /usr/bin/ssh /tmp/ssh_copy
+wbate@host:~$ ./nimguard_linux /tmp/ssh_copy --patch --rules demos/sample_rules.json --output /tmp/ssh_patched
+Target:  /tmp/ssh_copy
+Rules:   demos/sample_rules.json
+Output:  /tmp/ssh_patched
+---------------------------------------
+[+] Processing binary: /tmp/ssh_copy
+[+] Loading rules from: demos/sample_rules.json
+[+] Loaded 5 rules from file.
+[+] Applying patches...
+[+] Applying patches to /tmp/ssh_copy
+[+] Output path: /tmp/ssh_patched
+[!] 'memcpy' detected via import strings but no CALL site found in .text (PLT-only import, no direct patch target)
+[!] 'memmove' detected via import strings but no CALL site found in .text (PLT-only import, no direct patch target)
+[-] No patches applied.
+
+Patch complete. Verifying patched binary:
+[+] Processing binary: /tmp/ssh_patched
+[+] Running analysis on /tmp/ssh_patched
+[+] Format:       ELF
+[+] Architecture: x64
+[+] Entry point:  0x0000000000012C10
+[+] Sections (31):
+    (unnamed)    vaddr=0x0000000000000000 offset=0x00000000 size=0x00000000 [---]
+    .interp      vaddr=0x0000000000000318 offset=0x00000318 size=0x0000001C [r--]
+    .note.gnu.property vaddr=0x0000000000000338 offset=0x00000338 size=0x00000030 [r--]
+    .note.gnu.build-id vaddr=0x0000000000000368 offset=0x00000368 size=0x00000024 [r--]
+    .note.ABI-tag vaddr=0x000000000000038C offset=0x0000038C size=0x00000020 [r--]
+    .gnu.hash    vaddr=0x00000000000003B0 offset=0x000003B0 size=0x00000048 [r--]
+    .dynsym      vaddr=0x00000000000003F8 offset=0x000003F8 size=0x00002760 [r--]
+    .dynstr      vaddr=0x0000000000002B58 offset=0x00002B58 size=0x00001510 [r--]
+    .gnu.version vaddr=0x0000000000004068 offset=0x00004068 size=0x00000348 [r--]
+    .gnu.version_r vaddr=0x00000000000043B0 offset=0x000043B0 size=0x00000140 [r--]
+    .rela.dyn    vaddr=0x00000000000044F0 offset=0x000044F0 size=0x00003900 [r--]
+    .rela.plt    vaddr=0x0000000000007DF0 offset=0x00007DF0 size=0x000022F8 [r--]
+    .init        vaddr=0x000000000000B000 offset=0x0000B000 size=0x0000001B [r-x]
+    .plt         vaddr=0x000000000000B020 offset=0x0000B020 size=0x00001760 [r-x]
+    .plt.got     vaddr=0x000000000000C780 offset=0x0000C780 size=0x00000040 [r-x]
+    .plt.sec     vaddr=0x000000000000C7C0 offset=0x0000C7C0 size=0x00001750 [r-x]
+    .text        vaddr=0x000000000000DF10 offset=0x0000DF10 size=0x000811A4 [r-x]
+    .fini        vaddr=0x000000000008F0B4 offset=0x0008F0B4 size=0x0000000D [r-x]
+    .rodata      vaddr=0x0000000000090000 offset=0x00090000 size=0x00031827 [r--]
+    .eh_frame_hdr vaddr=0x00000000000C1828 offset=0x000C1828 size=0x00001614 [r--]
+    .eh_frame    vaddr=0x00000000000C2E40 offset=0x000C2E40 size=0x000078C4 [r--]
+    .init_array  vaddr=0x00000000000CBCD0 offset=0x000CACD0 size=0x00000008 [rw-]
+    .fini_array  vaddr=0x00000000000CBCD8 offset=0x000CACD8 size=0x00000008 [rw-]
+    .data.rel.ro vaddr=0x00000000000CBCE0 offset=0x000CACE0 size=0x000024A0 [rw-]
+    .dynamic     vaddr=0x00000000000CE180 offset=0x000CD180 size=0x00000230 [rw-]
+    .got         vaddr=0x00000000000CE3B0 offset=0x000CD3B0 size=0x00000C38 [rw-]
+    .data        vaddr=0x00000000000CF000 offset=0x000CE000 size=0x000002B0 [rw-]
+    .bss         vaddr=0x00000000000CF2C0 offset=0x000CE2B0 size=0x00002150 [rw-]
+    .gnu_debugaltlink vaddr=0x0000000000000000 offset=0x000CE2B0 size=0x0000004E [---]
+    .gnu_debuglink vaddr=0x0000000000000000 offset=0x000CE300 size=0x00000034 [---]
+    .shstrtab    vaddr=0x0000000000000000 offset=0x000CE334 size=0x0000012F [---]
+[+] Dangerous calls (4):
+    [!] memmove
+    [!] memcpy
+    [!] read
+    [!] strncpy
+
+Notes:
+  - A copy of /usr/bin/ssh is patched, never the original.
+  - ssh detects four dangerous calls: memmove, memcpy, read, and strncpy.
+    The sample_rules.json file covers memcpy and memmove; however, like ls,
+    ssh is compiled with IBT-hardened .plt.sec stubs on Ubuntu 24.04, so
+    no direct symbolic CALL site is found in .text.
+  - To patch strncpy or read, add rules with those identifiers to sample_rules.json.
+  - The four detected imports represent real hardening targets in a real-world
+    SSH client: strncpy has no bounds check on the destination, and unbounded
+    read() calls on untrusted channel data are a common audit finding.
+
+Platform: Ubuntu 24.04 WSL2, nimguard_linux x64

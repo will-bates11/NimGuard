@@ -1,0 +1,27 @@
+wbate@host:~$ /tmp/traceable_sleep &
+[1] 4981
+wbate@host:~$ BASE=$(cat /proc/4981/maps | grep "r-xp" | grep traceable_sleep | head -1 | cut -d- -f1)
+wbate@host:~$ echo "0x${BASE}"
+0x55e23db27000
+wbate@host:~$ ./nimguard_linux --inject 0x${BASE}:9090909090909090 --attach 4981
+[+] Attaching to PID 4981...
+[+] Attached.
+[+] Injecting 8 byte(s) at 0x000055E23DB27000
+[+] Memory patched.
+[+] Detached from PID 4981
+
+Notes:
+  - Eight NOP bytes (0x90 * 8) are injected at the start of the .text section.
+    A full 8-byte word is written to avoid a read-before-write PTRACE_PEEKDATA
+    step; on Linux kernels with strict ptrace hardening, PEEKDATA on r-xp pages
+    can fail even after PTRACE_ATTACH, so aligning the write to a word boundary
+    ensures a clean PTRACE_POKEDATA without a preceding read.
+  - In a real hardening scenario you would target a specific call site returned
+    by --analyze or --disasm rather than the section base address.
+  - WSL2 ptrace_scope=1: /tmp/traceable_sleep calls prctl(PR_SET_DUMPABLE, 1)
+    to allow attachment. Standard /usr/bin/sleep does not; use traceable_sleep
+    or launch the target as a child of nimguard via PTRACE_TRACEME.
+  - ASLR is active: BASE will differ between runs. Always read /proc/<pid>/maps
+    at attach time to locate the current .text base.
+
+Platform: Ubuntu 24.04 WSL2, nimguard_linux x64

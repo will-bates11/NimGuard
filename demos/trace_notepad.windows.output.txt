@@ -1,0 +1,21 @@
+C:\Users\wbate\OneDrive\Desktop\Projects\NimGuard> start notepad.exe
+C:\Users\wbate\OneDrive\Desktop\Projects\NimGuard> for /f "tokens=2" %p in ('tasklist /fi "imagename eq notepad.exe" /nh') do @echo PID: %p
+PID: 26176
+C:\Users\wbate\OneDrive\Desktop\Projects\NimGuard> nimguard.exe --trace --attach 26176 --trace-timeout 3000 --trace-max 20
+[+] Attaching to PID 26176...
+[+] Attached.
+[+] Tracing syscalls (max 20 events, timeout 3000ms)...
+    (no syscall events captured)
+[+] Detached from PID 26176
+
+Notes:
+  - On Windows, NimGuard's syscall tracer hooks system call dispatch via
+    DebugActiveProcess. notepad.exe sits idle in its message loop when no
+    user input arrives, so no syscalls fire within the 3-second window.
+  - To capture events, interact with the notepad window while the trace is
+    running (e.g. type in the editor or resize the window), then rerun with a
+    longer --trace-timeout.
+  - The trace loop exits cleanly once the timeout expires and detaches without
+    interrupting the target process.
+
+Platform: Windows 11, nimguard.exe x64

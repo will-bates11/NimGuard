@@ -1,0 +1,30 @@
+wbate@host:~$ cp /usr/bin/ls /tmp/ls_copy
+wbate@host:~$ /tmp/traceable_sleep &
+[1] 4786
+wbate@host:~$ ./nimguard_linux --monitor --attach 4786 /tmp/ls_copy
+[+] Attaching to PID 4786...
+[+] Attached.
+[+] Setting up breakpoint hooks for: /tmp/ls_copy
+[+] Setting up hooks for: /tmp/ls_copy
+[!] 'memcpy' detected in import table (no CALL site in .text)
+[!] 'memmove' detected in import table (no CALL site in .text)
+[+] Runtime instrumentation setup complete.
+[!] No breakpoints injected (no dangerous CALL sites found or Capstone unavailable).
+[+] Detached from PID 4786
+
+Notes:
+  - WSL2 sets ptrace_scope=1, which blocks PTRACE_ATTACH from arbitrary
+    processes. /tmp/traceable_sleep calls prctl(PR_SET_DUMPABLE, 1) before
+    entering its sleep loop, making it attachable by any process with the same
+    UID without requiring root.
+  - /tmp/ls_copy (a copy of /usr/bin/ls) is used as the binary reference for
+    hook analysis. The monitor scans ls's import table and reports memcpy and
+    memmove as targets for runtime hooks.
+  - Because ls uses IBT-hardened .plt.sec stubs on Ubuntu 24.04, no direct CALL
+    site is found, and no software breakpoints are injected into the running
+    process.
+  - For a binary with conventional PLT stubs, the monitor would inject INT3
+    breakpoints at each dangerous CALL site and report each invocation as it
+    fires at runtime.
+
+Platform: Ubuntu 24.04 WSL2, nimguard_linux x64

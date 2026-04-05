@@ -1,0 +1,48 @@
+C:\Users\wbate\OneDrive\Desktop\Projects\NimGuard> copy C:\Windows\System32\notepad.exe C:\Temp\notepad_copy.exe
+C:\Users\wbate\OneDrive\Desktop\Projects\NimGuard> nimguard.exe C:\Temp\notepad_copy.exe --patch --rules demos\sample_rules.json --output C:\Temp\notepad_patched.exe
+Target:  C:\Temp\notepad_copy.exe
+Rules:   demos\sample_rules.json
+Output:  C:\Temp\notepad_patched.exe
+---------------------------------------
+[+] Processing binary: C:\Temp\notepad_copy.exe
+[+] Loading rules from: demos/sample_rules.json
+[+] Loaded 5 rules from file.
+[+] Applying patches...
+[+] Applying patches to C:\Temp\notepad_copy.exe
+[+] Output path: C:\Temp\notepad_patched.exe
+[!] 'memcpy' detected via import strings but no CALL site found in .text (PLT-only import, no direct patch target)
+[!] 'memmove' detected via import strings but no CALL site found in .text (PLT-only import, no direct patch target)
+[-] No patches applied.
+
+Patch complete. Verifying patched binary:
+[+] Processing binary: C:\Temp\notepad_patched.exe
+[+] Running analysis on C:\Temp\notepad_patched.exe
+[+] Format:       PE
+[+] Architecture: x64
+[+] Entry point:  0x00000000000019B0
+[+] Sections (8):
+    .text        vaddr=0x0000000000001000 offset=0x00001000 size=0x00027000 [r-x]
+    fothk        vaddr=0x0000000000028000 offset=0x00028000 size=0x00001000 [r-x]
+    .rdata       vaddr=0x0000000000029000 offset=0x00029000 size=0x0000B000 [r--]
+    .data        vaddr=0x0000000000034000 offset=0x00034000 size=0x00001000 [rw-]
+    .pdata       vaddr=0x0000000000037000 offset=0x00035000 size=0x00002000 [r--]
+    .didat       vaddr=0x0000000000039000 offset=0x00037000 size=0x00001000 [rw-]
+    .rsrc        vaddr=0x000000000003A000 offset=0x00038000 size=0x0001F000 [r--]
+    .reloc       vaddr=0x0000000000059000 offset=0x00057000 size=0x00001000 [r--]
+[+] Dangerous calls (2):
+    [!] memcpy
+    [!] memmove
+
+Notes:
+  - A copy of notepad.exe is patched, never the original system binary.
+  - PE binaries resolve imports via the IAT (Import Address Table). The patching
+    engine detects memcpy and memmove in the .idata section but the .text section
+    calls them through indirect IAT slots (CALL QWORD PTR [rip+offset]), not
+    through symbolic PLT stubs. No direct CALL site with a resolvable name is
+    found, so no bytes are written.
+  - The patched copy is produced regardless; it is byte-for-byte identical to
+    the input since no patch bytes were applied.
+  - To instrument IAT-based calls at runtime, use --monitor --attach <pid> after
+    launching the process.
+
+Platform: Windows 11, nimguard.exe x64

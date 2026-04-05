@@ -1,0 +1,44 @@
+C:\Users\wbate\OneDrive\Desktop\Projects\NimGuard> copy C:\Windows\System32\OpenSSH\ssh.exe C:\Temp\ssh_copy.exe
+C:\Users\wbate\OneDrive\Desktop\Projects\NimGuard> nimguard.exe C:\Temp\ssh_copy.exe --patch --rules demos\sample_rules.json --output C:\Temp\ssh_patched.exe
+Target:  C:\Temp\ssh_copy.exe
+Rules:   demos\sample_rules.json
+Output:  C:\Temp\ssh_patched.exe
+---------------------------------------
+[+] Processing binary: C:\Temp\ssh_copy.exe
+[+] Loading rules from: demos/sample_rules.json
+[+] Loaded 5 rules from file.
+[+] Applying patches...
+[+] Applying patches to C:\Temp\ssh_copy.exe
+[+] Output path: C:\Temp\ssh_patched.exe
+[-] No patches applied.
+
+Patch complete. Verifying patched binary:
+[+] Processing binary: C:\Temp\ssh_patched.exe
+[+] Running analysis on C:\Temp\ssh_patched.exe
+[+] Format:       PE
+[+] Architecture: x64
+[+] Entry point:  0x00000000000A73E0
+[+] Sections (7):
+    .text        vaddr=0x0000000000001000 offset=0x00000400 size=0x000D6400 [r-x]
+    .rdata       vaddr=0x00000000000D8000 offset=0x000D6800 size=0x00050800 [r--]
+    .data        vaddr=0x0000000000129000 offset=0x00127000 size=0x00001E00 [rw-]
+    .pdata       vaddr=0x0000000000151000 offset=0x00128E00 size=0x00007A00 [r--]
+    .fptable     vaddr=0x0000000000159000 offset=0x00130800 size=0x00000200 [rw-]
+    .rsrc        vaddr=0x000000000015A000 offset=0x00130A00 size=0x00000A00 [r--]
+    .reloc       vaddr=0x000000000015B000 offset=0x00131400 size=0x00000E00 [r--]
+[+] Dangerous calls (1):
+    [!] read
+
+Notes:
+  - A copy of ssh.exe (Windows OpenSSH) is patched, never the original.
+  - The analysis detects 'read' as a dangerous import: ssh.exe imports this
+    Windows POSIX compatibility shim, which mirrors the POSIX read() semantics
+    with no bounds enforcement on the caller's buffer.
+  - The sample_rules.json rules target gets, strcpy, sprintf, memcpy, and
+    memmove. None of these match 'read', so no patches are applied.
+  - To add a rule for 'read', add an entry to sample_rules.json with
+    identifier "read" and the desired patch assembly (e.g. "xor eax, eax; ret").
+  - IAT-based PE imports still require a direct PLT-style CALL site in .text
+    to be patchable; ssh.exe uses indirect IAT calls like notepad.exe.
+
+Platform: Windows 11, nimguard.exe x64
