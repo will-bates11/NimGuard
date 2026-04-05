@@ -53,6 +53,8 @@ proc registerHook(hook: InstrumentationHook) =
 # successfully hooked.
 proc setupHooks*(binaryPath: string,
                  pid: int = -1): seq[(string, uint64)] =
+  hooks.setLen(0)
+  activeBreakpoints.setLen(0)
   echo "[+] Setting up hooks for: ", binaryPath
 
   let info = parseBinary(binaryPath)

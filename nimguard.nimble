@@ -1,6 +1,6 @@
 # NimGuard - Dynamic Binary Patching & Instrumentation Tool
 
-version       = "1.0.0"
+version       = "1.1.0"
 author        = "Will Bates"
 description   = "Binary patching and instrumentation tool for ELF and PE binaries."
 license       = "MIT"
@@ -53,6 +53,7 @@ task test, "Run unit tests":
   exec "nim c -r --path:src tests/test_runtime.nim"
   exec "nim c -r --path:src tests/test_winprocess.nim"
   exec "nim c -r --path:src tests/test_winruntime.nim"
+  exec "nim c -r --path:src tests/test_instrumentation.nim"
   exec "nim c -r --path:src tests/test_arm_support.nim"
 
 # Run only the Windows-specific tests

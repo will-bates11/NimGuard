@@ -327,8 +327,8 @@ when defined(windows):
     let restoreOk = VirtualProtectEx(h, cast[pointer](address), bytes.len,
                                      oldProtect, addr dummy)
     if restoreOk == BOOL(0):
-      echo "[-] Warning: VirtualProtectEx restore failed at 0x", toHex(address),
-           " err=", GetLastError()
+      return wpErr(wpWriteMem, "VirtualProtectEx restore failed at 0x" &
+               toHex(address) & " err=" & $GetLastError())
     if ok == BOOL(0):
       return wpErr(wpWriteMem, "addr=0x" & toHex(address) &
                " err=" & $GetLastError())

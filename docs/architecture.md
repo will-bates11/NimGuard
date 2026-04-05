@@ -79,7 +79,7 @@ The helper procs `buildArm32Trampoline`, `buildAarch64Trampoline`, and `breakpoi
 
 ### process.nim
 
-Wraps the Linux `ptrace(2)` syscall. Provides `attachProcess`, `detachProcess`, `readProcessMemory`, `writeProcessMemory`, `getRegisters`, `setRegisters`, `injectBreakpoint`, `removeBreakpoint`, and `traceSyscalls`. On non-Linux platforms all procedures return a `pePlatform` error without performing any action.
+Wraps the Linux `ptrace(2)` syscall. Provides `attachProcess`, `detachProcess`, `readProcessMemory`, `writeProcessMemory`, `getRegisters`, `setRegisters`, `injectBreakpoint`, `removeBreakpoint`, and `stepToSyscall`. On non-Linux platforms all procedures return a `pePlatform` error without performing any action.
 
 ### winprocess.nim
 
@@ -87,7 +87,7 @@ Wraps the Windows debugging API (`OpenProcess`, `ReadProcessMemory`, `WriteProce
 
 ### runtime.nim
 
-Cross-platform dispatcher. On Linux it delegates to `process.nim`; on Windows it delegates to `winprocess.nim`; on other platforms it returns a not-supported error. Callers import only `runtime.nim` and never reference the platform modules directly.
+Cross-platform dispatcher. On Linux it delegates to `process.nim`; on Windows it delegates to `winprocess.nim`; on other platforms it returns a not-supported error. Callers import only `runtime.nim` and never reference the platform modules directly. Higher-level syscall monitoring is exposed as `monitorSyscalls`, which calls `stepToSyscall` from `process.nim` in a loop.
 
 ## Data Flow
 
