@@ -124,3 +124,6 @@ jobs:
 
       - name: Run ARM support tests
         run: nim c -r --path:src tests/test_arm_support.nim
+
+      - name: Run instrumentation tests
+        run: nim c -r --path:src tests/test_instrumentation.nim
