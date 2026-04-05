@@ -2,6 +2,7 @@
 # Wraps Linux ptrace syscall for live process inspection and manipulation.
 # Compiles on all platforms but only operates on Linux. On other platforms
 # all procedures return a pePlatform error without performing any action.
+import binary
 
 type
   ProcessError* = enum
@@ -35,9 +36,10 @@ type
     origRax*:                   uint64
 
   Breakpoint* = object
-    address*:      uint64
-    originalByte*: byte
-    active*:       bool
+    address*:       uint64
+    originalByte*:  byte
+    originalBytes*: seq[byte]
+    active*:        bool
 
   WaitStatus* = enum
     wsRunning  = "running"
@@ -308,23 +310,42 @@ when defined(linux):
       return procErr(peContinue, "PTRACE_SYSCALL pid=" & $pid)
     return procOk()
 
-  # Inject a software breakpoint (INT3, 0xCC) at address.
-  # Returns the Breakpoint record containing the original byte.
-  proc setBreakpoint*(pid: int, address: uint64): (Breakpoint, ProcessResult) =
-    let (orig, rr) = readProcessMemory(pid, address, 1)
+  # Inject a software breakpoint at address. The instruction and size depend
+  # on the target architecture: INT3 (1 byte) for x86/x64, BKPT #0 (4 bytes)
+  # for ARM32, BRK #0 (4 bytes) for AArch64.
+  proc setBreakpoint*(pid: int, address: uint64,
+                      arch: Architecture = archX64): (Breakpoint, ProcessResult) =
+    var bkptBytes: seq[byte]
+    var readSize: int
+    case arch
+    of archARM64:
+      readSize = 4
+      # BRK #0 = D4200000 (big-endian), stored as 00 00 20 D4 (little-endian)
+      bkptBytes = @[0x00'u8, 0x00'u8, 0x20'u8, 0xD4'u8]
+    of archARM:
+      readSize = 4
+      # BKPT #0 ARM mode = E1200070 (big-endian), stored as 70 00 20 E1 (little-endian)
+      bkptBytes = @[0x70'u8, 0x00'u8, 0x20'u8, 0xE1'u8]
+    else:
+      readSize = 1
+      bkptBytes = @[0xCC'u8]
+    let (orig, rr) = readProcessMemory(pid, address, readSize)
     if not rr.success:
       return (Breakpoint(), rr)
-    let wr = writeProcessMemory(pid, address, @[0xCC'u8])
+    let wr = writeProcessMemory(pid, address, bkptBytes)
     if not wr.success:
       return (Breakpoint(), wr)
-    return (Breakpoint(address: address, originalByte: orig[0], active: true),
+    return (Breakpoint(address: address, originalByte: orig[0],
+                       originalBytes: orig, active: true),
             procOk())
 
-  # Remove a breakpoint by restoring the original byte.
+  # Remove a breakpoint by restoring the original bytes.
   proc removeBreakpoint*(pid: int, bp: Breakpoint): ProcessResult =
     if not bp.active:
       return procOk()
-    return writeProcessMemory(pid, bp.address, @[bp.originalByte])
+    let restoreBytes = if bp.originalBytes.len > 0: bp.originalBytes
+                       else: @[bp.originalByte]
+    return writeProcessMemory(pid, bp.address, restoreBytes)
 
 # ---------------------------------------------------------------------------
 # Non-Linux stubs: return platform errors without performing any action.
@@ -368,7 +389,8 @@ else:
   proc stepToSyscall*(pid: int): ProcessResult =
     procErr(pePlatform)
 
-  proc setBreakpoint*(pid: int, address: uint64): (Breakpoint, ProcessResult) =
+  proc setBreakpoint*(pid: int, address: uint64,
+                      arch: Architecture = archX64): (Breakpoint, ProcessResult) =
     (Breakpoint(), procErr(pePlatform))
 
   proc removeBreakpoint*(pid: int, bp: Breakpoint): ProcessResult =

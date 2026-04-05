@@ -62,7 +62,21 @@ Same pattern as the Capstone layer. `bindings/keystone.nim` lazy-loads `libkeyst
 
 ### ARM support
 
-Binary parsing and disassembly support ARM and AArch64 via Capstone. `makeNops()` in `assembler.nim` generates correct NOP byte sequences for ARM (4-byte `MOV R0,R0`), ARM Thumb (2-byte `0x00 0xBF`), and AArch64 (4-byte `NOP`). **Patching and runtime hooking (`hookFunction`) are currently x86/x64 only.** Attempting to use `hookFunction` on an ARM target returns an error rather than silently writing x86 JMP bytes into an ARM binary.
+Binary parsing and disassembly support ARM and AArch64 via Capstone. `makeNops()` in `assembler.nim` generates correct NOP byte sequences for ARM (4-byte `MOV R0,R0`), ARM Thumb (2-byte `0x00 0xBF`), and AArch64 (4-byte `NOP`).
+
+Runtime hooking and breakpoint injection are now architecture-aware:
+
+- **`hookFunction`** generates the correct trampoline for the detected target architecture:
+  - x86/x64: relative `JMP rel32` (5 bytes) or absolute indirect `JMP [RIP+0]` (14 bytes)
+  - ARM32: `LDR PC, [PC, #-4]` + 4-byte absolute target (8 bytes total)
+  - AArch64: `LDR X16, #8; BR X16` + 8-byte absolute target (16 bytes total)
+- **`injectBreakpoint`** writes the correct trap instruction for the target architecture:
+  - x86/x64: `INT3` (0xCC, 1 byte)
+  - ARM32 ARM mode: `BKPT #0` (0xE1200070, 4 bytes, little-endian: `70 00 20 E1`)
+  - ARM32 Thumb mode: `BKPT #0` (0xBE00, 2 bytes, little-endian: `00 BE`)
+  - AArch64: `BRK #0` (0xD4200000, 4 bytes, little-endian: `00 00 20 D4`)
+
+The helper procs `buildArm32Trampoline`, `buildAarch64Trampoline`, and `breakpointInstructionBytes` are exported from `runtime.nim` for unit testing. All byte-sequence tests run on x86 hosts without ARM hardware or QEMU. Live ARM instrumentation requires an ARM target process.
 
 ### process.nim
 

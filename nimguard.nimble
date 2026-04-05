@@ -53,6 +53,7 @@ task test, "Run unit tests":
   exec "nim c -r --path:src tests/test_runtime.nim"
   exec "nim c -r --path:src tests/test_winprocess.nim"
   exec "nim c -r --path:src tests/test_winruntime.nim"
+  exec "nim c -r --path:src tests/test_arm_support.nim"
 
 # Run only the Windows-specific tests
 task test_windows, "Run Windows process and runtime tests":

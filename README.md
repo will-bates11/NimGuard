@@ -33,6 +33,8 @@ NimGuard is a cross-platform binary analysis and patching toolkit written in Nim
 
 On macOS, runtime instrumentation flags (--attach, --inject, --breakpoint, --trace) will report that the platform is not supported.
 
+**ARM target support:** `hookFunction` and `injectBreakpoint` generate correct trampoline and breakpoint instructions for ARM32 and AArch64 target binaries when the target architecture is detected from the binary. Live testing of ARM instrumentation requires an ARM process (native hardware or QEMU user-mode emulation). Byte-sequence correctness is verified by unit tests that run on any host.
+
 ## Installation
 
 ### 1. Install Nim 2.x
