@@ -1,0 +1,43 @@
+$ demos\patch_binary.bat
+Target:  C:\...\demos\test_binary.exe
+Rules:   C:\...\demos\sample_rules.json
+Output:  C:\...\demos\test_binary_patched.exe
+---------------------------------------
+[+] Processing binary: demos/test_binary.exe
+[+] Loading rules from: demos/sample_rules.json
+[+] Loaded 5 rules from file.
+[+] Applying patches...
+[+] Applying patches to demos/test_binary.exe
+[+] Output path: demos/test_binary_patched.exe
+[+] Applying patch to function: memcpy
+    - New instructions: mov eax, 0; ret
+    - Assembled: 6 byte(s) (2 statement(s))
+[+] Patch applied for memcpy
+[+] Applying patch to function: memmove
+    - New instructions: xor eax, eax; ret
+    - Assembled: 3 byte(s) (2 statement(s))
+[+] Patch applied for memmove
+[+] Patched binary written to: demos/test_binary_patched.exe
+[+] Patching completed successfully.
+
+Patch complete. Verifying patched binary:
+[+] Processing binary: demos/test_binary_patched.exe
+[+] Running analysis on demos/test_binary_patched.exe
+[+] Format:       PE
+[+] Architecture: x64
+[+] Entry point:  0x0000000000001046
+[+] Sections (19):
+    .text        vaddr=0x0000000000001000 offset=0x00000600 size=0x0001E800 [r-x]
+    ...
+[+] Dangerous calls (2):
+    [!] memcpy
+    [!] memmove
+
+Notes:
+  - The patching step assembles and validates each rule using Keystone, confirming
+    the instruction bytes compile correctly (e.g., "mov eax, 0; ret" -> 6 bytes).
+  - The import table scan still reports memcpy/memmove because the current patch
+    mode appends a log without rewriting the PE import table. Use assembleAndPatch
+    with a specific file offset to overwrite exact bytes in the binary on disk.
+
+Platform: Windows 11, nimguard.exe x64, keystone 0.9.2
