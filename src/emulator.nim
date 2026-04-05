@@ -128,7 +128,8 @@ proc emulateRange*(ctx: var EmulatorContext, startAddr: uint64,
   let err = uc_emu_start(ctx.engine, startAddr, endAddr,
                          0, csize_t(maxInstructions))
   if err == UC_ERR_OK:
-    EmulationResult(success: true, errorMsg: "", instrCount: maxInstructions)
+    # Unicorn does not report instruction count on success; use code hooks for precise counting.
+    EmulationResult(success: true, errorMsg: "", instrCount: 0)
   else:
     EmulationResult(success: false,
                     errorMsg: "uc_emu_start error code: " & $int(err),

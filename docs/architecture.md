@@ -8,7 +8,7 @@ NimGuard is structured as a set of focused modules with a thin CLI entry point. 
 
 ```
 src/
-  main.nim              CLI entry point and flag dispatch
+  nimguard.nim          CLI entry point and flag dispatch
   binary.nim            ELF and PE header parsing (pure Nim, no C deps)
   patcher.nim           Static patching and emulation-based patch testing
   rules.nim             JSON patch rule loading and default rule set
@@ -19,7 +19,6 @@ src/
   process.nim           Linux ptrace process control
   winprocess.nim        Windows Win32 debug API process control
   runtime.nim           Cross-platform dispatcher (ptrace on Linux, Win32 on Windows)
-  winruntime.nim        Higher-level Windows instrumentation operations
   bindings/
     capstone.nim        Capstone C FFI declarations
     keystone.nim        Keystone C FFI declarations
@@ -28,7 +27,7 @@ src/
 
 ## Module Descriptions
 
-### main.nim
+### nimguard.nim
 
 Parses CLI flags using `parseopt` and dispatches to the appropriate module procedures. Handles two top-level modes: static analysis (binary path required) and live process instrumentation (`--attach <pid>`).
 
@@ -54,7 +53,7 @@ Defines `HookType` and `InstrumentationHook` types. Provides `setupHooks`, which
 
 ### assembler.nim + bindings/keystone.nim
 
-Same pattern as the Capstone layer. `bindings/keystone.nim` lazy-loads `libkeystone`. `assembler.nim` exposes `assembleBlock`, `assembleInstruction`, `generateNop`, and `isKeystoneAvailable`.
+Same pattern as the Capstone layer. `bindings/keystone.nim` lazy-loads `libkeystone`. `assembler.nim` exposes `assembleBlock`, `assembleInstruction`, `makeNops`, and `isKeystoneAvailable`.
 
 ### emulator.nim + bindings/unicorn.nim
 
@@ -90,16 +89,12 @@ Wraps the Windows debugging API (`OpenProcess`, `ReadProcessMemory`, `WriteProce
 
 Cross-platform dispatcher. On Linux it delegates to `process.nim`; on Windows it delegates to `winprocess.nim`; on other platforms it returns a not-supported error. Callers import only `runtime.nim` and never reference the platform modules directly.
 
-### winruntime.nim
-
-Higher-level Windows instrumentation built on `winprocess.nim`. Provides `attachProcess`, `detachProcess`, `patchProcessMemory`, `injectBreakpoint`, and `monitorSyscalls` with Windows-specific semantics (debug event loop, INT3 breakpoints via `WriteProcessMemory`).
-
 ## Data Flow
 
 ### Static analysis path
 
 ```
-main.nim
+nimguard.nim
   -> binary.nim          parseBinary()      -> BinaryInfo
   -> disassembler.nim    disassembleSection() -> seq[Instruction]
   -> patcher.nim         analyzeBinary()    -> BinaryAnalysis
@@ -111,7 +106,7 @@ main.nim
 ### Live instrumentation path
 
 ```
-main.nim
+nimguard.nim
   -> runtime.nim         attachProcess()
   -> runtime.nim         injectBreakpoint() / patchProcessMemory() / monitorSyscalls()
   -> runtime.nim         detachProcess()

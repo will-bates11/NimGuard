@@ -86,22 +86,6 @@ proc assembleAndPatch*(srcPath: string, dstPath: string, offset: int,
     return false
   return patchBinaryAtOffset(srcPath, dstPath, offset, bytes)
 
-# Apply a named patch to a binary. When Keystone is available, assembles
-# the patch instructions to validate them and reports the encoded size.
-# Falls back to the previous stub behaviour (returns true) when Keystone is
-# not installed, so the rest of the pipeline is not blocked.
-proc applyPatch*(binaryPath: string, functionName: string, patch: string): bool =
-  echo "[+] Applying patch to function: ", functionName
-  echo "    - New instructions: ", patch
-  if isKeystoneAvailable():
-    let output = assembleBlock(patch, archX64)
-    if output.bytes.len > 0:
-      echo "    - Assembled: ", output.bytes.len, " byte(s) (", output.statCount, " statement(s))"
-      return true
-    echo "[-] Assembly failed for: ", patch
-    return false
-  return true
-
 # Test a patch in Unicorn emulation before writing to disk.
 # Reads srcPath, applies newBytes at offset in a temporary buffer, loads the
 # buffer into an emulator, and executes up to maxInstr instructions starting

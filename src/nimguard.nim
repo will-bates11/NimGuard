@@ -389,7 +389,7 @@ proc main() =
   if monitor:
     echo "[+] Enabling runtime monitoring..."
     discard setupHooks(binaryPath)
-    echo "[+] Monitoring started."
+    echo "[+] Static analysis complete. Use --attach <pid> to monitor a running process."
 
 when isMainModule:
   main()

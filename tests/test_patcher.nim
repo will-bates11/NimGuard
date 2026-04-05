@@ -17,11 +17,6 @@ suite "Patcher Module Tests":
     check defaultRules.len > 0
     check defaultRules[0].identifier == "strcpy"
 
-  test "applyPatch returns true for a valid instruction":
-    # With Keystone: assembles the instruction and returns true.
-    # Without Keystone: gracefully returns true (fallback behaviour).
-    check applyPatch("any_binary", "anyFunction", "nop") == true
-
   test "Applying patches returns false when no vulnerabilities found":
     # A non-existent binary has no detected vulnerabilities, so no rule
     # can match and applyPatches should return false.
@@ -117,6 +112,32 @@ suite "Patcher Module Tests":
     defer: removeFile(srcFile)
     writeFile(srcFile, "ABCDEF")
     check patchBinaryAtOffset(srcFile, "out_empty.bin", 0, @[]) == false
+
+  test "patchBinaryAtOffset patches a minimal ELF binary and atomic write succeeds":
+    let srcFile = "test_patch_elf.bin"
+    let dstFile = "test_patch_elf_out.bin"
+    defer:
+      removeFile(srcFile)
+      removeFile(dstFile)
+    # Build a 64-byte buffer with ELF magic at offset 0-3.
+    var elfBuf = newString(64)
+    elfBuf[0] = char(0x7f)
+    elfBuf[1] = 'E'
+    elfBuf[2] = 'L'
+    elfBuf[3] = 'F'
+    writeFile(srcFile, elfBuf)
+    # Patch a single NOP byte at offset 4 (first byte after ELF magic).
+    let nop = @[0x90'u8]
+    check patchBinaryAtOffset(srcFile, dstFile, 4, nop) == true
+    let result = readFile(dstFile)
+    check result.len == 64
+    # ELF magic must be preserved.
+    check byte(result[0]) == 0x7f'u8
+    check byte(result[1]) == byte('E')
+    check byte(result[2]) == byte('L')
+    check byte(result[3]) == byte('F')
+    # Patched byte must be NOP.
+    check byte(result[4]) == 0x90'u8
 
   test "assembleAndPatch writes assembled bytes when Keystone available":
     if not isKeystoneAvailable():

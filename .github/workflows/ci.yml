@@ -89,6 +89,12 @@ jobs:
       - name: Run winruntime tests (stubs)
         run: nim c -r --path:src tests/test_winruntime.nim
 
+      - name: Run ARM support tests
+        run: nim c -r --path:src tests/test_arm_support.nim
+
+      - name: Run instrumentation tests
+        run: nim c -r --path:src tests/test_instrumentation.nim
+
   build-and-test-windows:
     runs-on: windows-latest
     timeout-minutes: 10
@@ -115,3 +121,6 @@ jobs:
 
       - name: Run winruntime tests
         run: nim c -r --path:src tests/test_winruntime.nim
+
+      - name: Run ARM support tests
+        run: nim c -r --path:src tests/test_arm_support.nim

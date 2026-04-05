@@ -125,7 +125,7 @@ proc parseELF(data: seq[byte]): BinaryInfo =
           fileOffset:     foffset,
           size:           size,
           flags: SectionFlags(
-            readable:   (shflags and 0x2) != 0,  # SHF_ALLOC
+            readable:   (shflags and 0x2) != 0,  # SHF_ALLOC (allocatable, implies readable for loaded sections)
             writable:   (shflags and 0x1) != 0,  # SHF_WRITE
             executable: (shflags and 0x4) != 0   # SHF_EXECINSTR
           )
@@ -165,9 +165,9 @@ proc parseELF(data: seq[byte]): BinaryInfo =
           fileOffset:     foffset,
           size:           size,
           flags: SectionFlags(
-            readable:   (shflags and 0x2) != 0,
-            writable:   (shflags and 0x1) != 0,
-            executable: (shflags and 0x4) != 0
+            readable:   (shflags and 0x2) != 0,  # SHF_ALLOC (allocatable, implies readable for loaded sections)
+            writable:   (shflags and 0x1) != 0,  # SHF_WRITE
+            executable: (shflags and 0x4) != 0   # SHF_EXECINSTR
           )
         ))
 
@@ -304,9 +304,14 @@ proc parseELFImports(info: BinaryInfo): seq[ImportEntry] =
   let relaEntSize = if useRela: (if is64: 24 else: 12) else: 8
   let relaCount   = if relaEntSize > 0: int(relaplt.size) div relaEntSize else: 0
 
-  # PLT layout: 16-byte header, then 16-byte entries (x86-64 standard ABI).
-  let pltEntrySize: uint64 = 16
-  let pltHeaderSize: uint64 = 16
+  # PLT entry and header sizes depend on the target architecture.
+  # x86/x64 and AArch64 use 16-byte entries; ARM32 uses 12-byte entries with a 20-byte header.
+  let pltEntrySize: uint64 = case info.architecture
+    of archARM: 12
+    else: 16  # x86, x64, aarch64
+  let pltHeaderSize: uint64 = case info.architecture
+    of archARM: 20  # ARM32 PLT header is 20 bytes
+    else: 16
 
   for i in 0 ..< relaCount:
     let base = int(relaplt.fileOffset) + i * relaEntSize

@@ -243,12 +243,13 @@ proc runMonitorLoop*(pid: int, maxEvents: int = 1000) =
             discard winprocess.continueDebugEvent(ev.processId, tid, true)
 
             # Wait for the single-step trap, then re-inject.
-            let (ev2, _) = winprocess.waitForDebugEvent(5000)
+            let (ev2, wr2) = winprocess.waitForDebugEvent(5000)
             let (newBp, ir) = runtime.injectBreakpoint(pid, hitAddr)
             if ir.success:
               activeBreakpoints[matchIdx] = (newBp, hook)
-            discard winprocess.continueDebugEvent(ev2.processId,
-                                                  ev2.threadId, true)
+            if wr2.success:
+              discard winprocess.continueDebugEvent(ev2.processId,
+                                                    ev2.threadId, true)
             continue
 
       discard winprocess.continueDebugEvent(ev.processId, ev.threadId, false)

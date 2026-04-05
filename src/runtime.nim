@@ -4,7 +4,7 @@
 # On other platforms, all procedures return a platform-not-supported error.
 import disassembler, binary
 when defined(linux):
-  import times
+  import times, os
 
 when defined(linux):
   import process
@@ -295,9 +295,23 @@ proc monitorSyscalls*(pid: int, maxSyscalls: int = 1000,
       let sr = process.stepToSyscall(pid)
       if not sr.success:
         break
-      # Block until the process stops at the next syscall boundary.
-      # Using a blocking waitpid avoids the busy-poll sleep loop.
-      let wr = process.waitForSignal(pid)
+      # Poll with WNOHANG so the wall-clock timeout fires even when the
+      # target is blocked inside a long-running syscall (e.g. sleep).
+      var wr: WaitResult
+      var waitDone = false
+      while not waitDone:
+        if timeoutMs > 0 and
+           int64(epochTime() * 1000.0) - startMs >= int64(timeoutMs):
+          break
+        let nwr = process.waitForSignalNonBlock(pid)
+        case nwr.status
+        of wsRunning:
+          os.sleep(10)  # 10 ms poll interval
+        else:
+          wr = nwr
+          waitDone = true
+      if not waitDone:
+        break  # timeout hit
       if wr.status != wsStopped:
         break
       let (regs, gr) = process.getRegisters(pid)

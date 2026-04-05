@@ -181,14 +181,6 @@ suite "Breakpoint Instruction Bytes":
     check bkpt[2] == 0x20'u8
     check bkpt[3] == 0xE1'u8
 
-  test "Thumb-mode BKPT #0 byte sequence (2 bytes: 00 BE)":
-    # Thumb BKPT #0 = BE00 (big-endian 16-bit), stored as 00 BE (little-endian)
-    # This constant verifies the expected Thumb encoding for documentation.
-    let thumbBkpt: seq[byte] = @[0x00'u8, 0xBE'u8]
-    check thumbBkpt.len == 2
-    check thumbBkpt[0] == 0x00'u8
-    check thumbBkpt[1] == 0xBE'u8
-
   test "AArch64 breakpoint is 4-byte BRK #0":
     # BRK #0 = D4200000 (big-endian), stored as 00 00 20 D4 (little-endian)
     let bkpt = breakpointInstructionBytes(archARM64)

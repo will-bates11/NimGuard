@@ -201,7 +201,7 @@ Write bytes into process memory:
 ./nimguard --attach <pid> --inject 0x401000:9090
 ```
 
-Trace syscalls (up to 64 events):
+Trace syscalls:
 
 ```bash
 ./nimguard --attach <pid> --trace
