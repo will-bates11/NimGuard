@@ -1,0 +1,4 @@
+[+] Processing binary: /usr/bin/ssh
+[+] Emulating .text section of /usr/bin/ssh
+[+] Emulating up to 256 instructions at 0x000000000000DF10
+[-] Emulation stopped: uc_emu_start error code: 6

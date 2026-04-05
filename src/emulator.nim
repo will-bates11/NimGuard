@@ -62,18 +62,22 @@ proc closeEmulator*(ctx: var EmulatorContext) =
     ctx.engine = nil
 
 # Map a memory region into the emulated address space and write data into it.
-# address must be 4 KB aligned. The region size is rounded up to the next
-# 4 KB boundary automatically. Returns true on success.
+# address is aligned down to the nearest 4 KB page boundary automatically.
+# The mapped region size is rounded up to the next 4 KB boundary. Returns true
+# on success.
 proc loadMemory*(ctx: var EmulatorContext, address: uint64,
                  data: seq[byte], perms: cuint = UC_PROT_ALL): bool =
   if ctx.engine == nil or data.len == 0:
     return false
 
-  # Round up to 4 KB page boundary.
-  const pageSize = 0x1000
-  let alignedSize = ((data.len + pageSize - 1) div pageSize) * pageSize
+  const pageSize = 0x1000'u64
+  # Align the map base down to a page boundary.
+  let mapBase   = address and not (pageSize - 1)
+  let delta     = int(address - mapBase)
+  let totalSize = delta + data.len
+  let alignedSize = uint64((int(totalSize) + int(pageSize) - 1) div int(pageSize)) * pageSize
 
-  let mapErr = uc_mem_map(ctx.engine, address, csize_t(alignedSize), perms)
+  let mapErr = uc_mem_map(ctx.engine, mapBase, csize_t(alignedSize), perms)
   if mapErr != UC_ERR_OK:
     return false
 

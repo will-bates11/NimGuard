@@ -1,2 +1,4 @@
 [+] Processing binary: /usr/bin/ls
-[-] Unicorn library not available. Install libunicorn-dev to enable emulation.
+[+] Emulating .text section of /usr/bin/ls
+[+] Emulating up to 256 instructions at 0x0000000000004D70
+[-] Emulation stopped: uc_emu_start error code: 7
