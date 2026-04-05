@@ -1,41 +1,39 @@
-Analyzing: /mnt/c/Users/wbate/OneDrive/Desktop/Projects/NimGuard/demos/test_binary
----------------------------------------
-[+] Processing binary: /mnt/c/Users/wbate/OneDrive/Desktop/Projects/NimGuard/demos/test_binary
-[+] Running analysis on /mnt/c/Users/wbate/OneDrive/Desktop/Projects/NimGuard/demos/test_binary
+[+] Processing binary: /tmp/test_elf
+[+] Running analysis on /tmp/test_elf
 [+] Format:       ELF
 [+] Architecture: x64
-[+] Entry point:  0x00000000004010B0
+[+] Entry point:  0x00000000000010A0
 [+] Sections (31):
     (unnamed)    vaddr=0x0000000000000000 offset=0x00000000 size=0x00000000 [---]
-    .interp      vaddr=0x0000000000400318 offset=0x00000318 size=0x0000001C [r--]
-    .note.gnu.property vaddr=0x0000000000400338 offset=0x00000338 size=0x00000030 [r--]
-    .note.gnu.build-id vaddr=0x0000000000400368 offset=0x00000368 size=0x00000024 [r--]
-    .note.ABI-tag vaddr=0x000000000040038C offset=0x0000038C size=0x00000020 [r--]
-    .gnu.hash    vaddr=0x00000000004003B0 offset=0x000003B0 size=0x0000001C [r--]
-    .dynsym      vaddr=0x00000000004003D0 offset=0x000003D0 size=0x000000A8 [r--]
-    .dynstr      vaddr=0x0000000000400478 offset=0x00000478 size=0x00000071 [r--]
-    .gnu.version vaddr=0x00000000004004EA offset=0x000004EA size=0x0000000E [r--]
-    .gnu.version_r vaddr=0x00000000004004F8 offset=0x000004F8 size=0x00000040 [r--]
-    .rela.dyn    vaddr=0x0000000000400538 offset=0x00000538 size=0x00000030 [r--]
-    .rela.plt    vaddr=0x0000000000400568 offset=0x00000568 size=0x00000060 [r--]
-    .init        vaddr=0x0000000000401000 offset=0x00001000 size=0x0000001B [r-x]
-    .plt         vaddr=0x0000000000401020 offset=0x00001020 size=0x00000050 [r-x]
-    .plt.sec     vaddr=0x0000000000401070 offset=0x00001070 size=0x00000040 [r-x]
-    .text        vaddr=0x00000000004010B0 offset=0x000010B0 size=0x00000182 [r-x]
-    .fini        vaddr=0x0000000000401234 offset=0x00001234 size=0x0000000D [r-x]
-    .rodata      vaddr=0x0000000000402000 offset=0x00002000 size=0x0000002A [r--]
-    .eh_frame_hdr vaddr=0x000000000040202C offset=0x0000202C size=0x0000003C [r--]
-    .eh_frame    vaddr=0x0000000000402068 offset=0x00002068 size=0x000000C4 [r--]
-    .init_array  vaddr=0x0000000000403DF8 offset=0x00002DF8 size=0x00000008 [rw-]
-    .fini_array  vaddr=0x0000000000403E00 offset=0x00002E00 size=0x00000008 [rw-]
-    .dynamic     vaddr=0x0000000000403E08 offset=0x00002E08 size=0x000001D0 [rw-]
-    .got         vaddr=0x0000000000403FD8 offset=0x00002FD8 size=0x00000010 [rw-]
-    .got.plt     vaddr=0x0000000000403FE8 offset=0x00002FE8 size=0x00000038 [rw-]
-    .data        vaddr=0x0000000000404020 offset=0x00003020 size=0x00000010 [rw-]
-    .bss         vaddr=0x0000000000404030 offset=0x00003030 size=0x00000008 [rw-]
-    .comment     vaddr=0x0000000000000000 offset=0x00003030 size=0x0000002D [---]
-    .symtab      vaddr=0x0000000000000000 offset=0x00003060 size=0x00000390 [---]
-    .strtab      vaddr=0x0000000000000000 offset=0x000033F0 size=0x000001F2 [---]
-    .shstrtab    vaddr=0x0000000000000000 offset=0x000035E2 size=0x0000011F [---]
+    .interp      vaddr=0x0000000000000318 offset=0x00000318 size=0x0000001C [r--]
+    .note.gnu.property vaddr=0x0000000000000338 offset=0x00000338 size=0x00000030 [r--]
+    .note.gnu.build-id vaddr=0x0000000000000368 offset=0x00000368 size=0x00000024 [r--]
+    .note.ABI-tag vaddr=0x000000000000038C offset=0x0000038C size=0x00000020 [r--]
+    .gnu.hash    vaddr=0x00000000000003B0 offset=0x000003B0 size=0x00000024 [r--]
+    .dynsym      vaddr=0x00000000000003D8 offset=0x000003D8 size=0x000000D8 [r--]
+    .dynstr      vaddr=0x00000000000004B0 offset=0x000004B0 size=0x000000BC [r--]
+    .gnu.version vaddr=0x000000000000056C offset=0x0000056C size=0x00000012 [r--]
+    .gnu.version_r vaddr=0x0000000000000580 offset=0x00000580 size=0x00000050 [r--]
+    .rela.dyn    vaddr=0x00000000000005D0 offset=0x000005D0 size=0x000000C0 [r--]
+    .rela.plt    vaddr=0x0000000000000690 offset=0x00000690 size=0x00000048 [r--]
+    .init        vaddr=0x0000000000001000 offset=0x00001000 size=0x0000001B [r-x]
+    .plt         vaddr=0x0000000000001020 offset=0x00001020 size=0x00000040 [r-x]
+    .plt.got     vaddr=0x0000000000001060 offset=0x00001060 size=0x00000010 [r-x]
+    .plt.sec     vaddr=0x0000000000001070 offset=0x00001070 size=0x00000030 [r-x]
+    .text        vaddr=0x00000000000010A0 offset=0x000010A0 size=0x00000155 [r-x]
+    .fini        vaddr=0x00000000000011F8 offset=0x000011F8 size=0x0000000D [r-x]
+    .rodata      vaddr=0x0000000000002000 offset=0x00002000 size=0x0000000B [r--]
+    .eh_frame_hdr vaddr=0x000000000000200C offset=0x0000200C size=0x00000034 [r--]
+    .eh_frame    vaddr=0x0000000000002040 offset=0x00002040 size=0x000000AC [r--]
+    .init_array  vaddr=0x0000000000003DA8 offset=0x00002DA8 size=0x00000008 [rw-]
+    .fini_array  vaddr=0x0000000000003DB0 offset=0x00002DB0 size=0x00000008 [rw-]
+    .dynamic     vaddr=0x0000000000003DB8 offset=0x00002DB8 size=0x000001F0 [rw-]
+    .got         vaddr=0x0000000000003FA8 offset=0x00002FA8 size=0x00000058 [rw-]
+    .data        vaddr=0x0000000000004000 offset=0x00003000 size=0x00000010 [rw-]
+    .bss         vaddr=0x0000000000004010 offset=0x00003010 size=0x00000008 [rw-]
+    .comment     vaddr=0x0000000000000000 offset=0x00003010 size=0x0000002D [---]
+    .symtab      vaddr=0x0000000000000000 offset=0x00003040 size=0x00000390 [---]
+    .strtab      vaddr=0x0000000000000000 offset=0x000033D0 size=0x00000209 [---]
+    .shstrtab    vaddr=0x0000000000000000 offset=0x000035D9 size=0x0000011A [---]
 [+] Dangerous calls (1):
-    [!] strcpy
+    [!] memcpy
