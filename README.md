@@ -1,16 +1,24 @@
 # NimGuard
 
-NimGuard is a binary patching and instrumentation tool for ELF and PE binaries. It supports static analysis, rule-based patching, CPU emulation testing, and live process instrumentation on Linux and Windows.
+NimGuard is a cross-platform binary analysis and patching toolkit written in Nim. It helps security researchers, reverse engineers, and vulnerability analysts inspect, modify, and instrument compiled ELF and PE binaries without source code access.
+
+## Use Cases
+
+- **Auditing third-party binaries:** Scan a binary for dangerous function calls (strcpy, gets, sprintf, etc.) and apply rule-based patches to replace them, without touching source code.
+- **Triaging suspicious binaries:** Inspect imports, parse headers, and disassemble the `.text` section before ever executing the file.
+- **CTF and RE work:** Patch stripped binaries quickly using JSON rule files, with optional emulator validation before writing anything to disk.
+- **Legacy binary maintenance:** Apply reproducible, version-controlled patches to binaries where source code is lost or unavailable.
+- **Runtime monitoring of untrusted processes:** Attach to a live process, set breakpoints on flagged imports, inject bytes, and trace syscalls, all without a debugger.
 
 ## Features
 
-- **Binary analysis:** Pure-Nim ELF and PE header parsing. Detects architecture, sections, and dangerous function calls (strcpy, gets, sprintf, etc.)
-- **Disassembly:** Full `.text` section disassembly via Capstone (optional C library)
-- **Patching:** Rule-based static patching using JSON rule files; Keystone used for patch validation when available
-- **Emulation testing:** Run the `.text` section through Unicorn before committing a patch (optional C library)
-- **Live process instrumentation (Linux):** Attach to a running process via ptrace, read/write memory, inject breakpoints, trace syscalls
-- **Live process instrumentation (Windows):** Attach to a running process via Win32 debug API, read/write memory, inject breakpoints, trace debug events
-- **Cross-platform build:** Compiles on Linux, Windows, and macOS; C library features degrade gracefully when libraries are not installed
+- **Binary analysis:** Parse ELF and PE headers in pure Nim. Detect architecture, sections, and dangerous function calls. No C libraries needed for this.
+- **Disassembly:** Disassemble the full `.text` section via Capstone. Requires the Capstone C library.
+- **Rule-based patching:** Define patches in JSON and apply them statically. Keystone validates assembled patch bytes when available.
+- **Emulation testing:** Run the `.text` section through Unicorn before committing a patch to disk. Catches crashes before they happen.
+- **Live instrumentation (Linux):** Attach via ptrace. Read and write process memory, inject breakpoints, trace syscalls.
+- **Live instrumentation (Windows):** Attach via Win32 debug API. Same capabilities as Linux instrumentation.
+- **Graceful degradation:** Builds and runs on Linux, Windows, and macOS. Flags that depend on optional C libraries report unavailability cleanly rather than crashing.
 
 ## Platform Support
 
