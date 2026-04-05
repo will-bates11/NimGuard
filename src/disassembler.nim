@@ -18,12 +18,6 @@ type
     opStr*:    string
     rawBytes*: seq[byte]
 
-# Convert a null-terminated char array to a Nim string.
-proc charArrayToString(arr: openArray[char]): string =
-  for c in arr:
-    if c == '\0': break
-    result.add(c)
-
 # Map NimGuard Architecture to Capstone arch/mode constants.
 proc archToCapstone(arch: Architecture): (cint, cint) =
   case arch
@@ -68,27 +62,27 @@ proc disassembleBytes*(data: seq[byte], baseAddr: uint64,
 
   defer: discard cs_close(addr handle)
 
-  var insnPtr: ptr CsInsn = nil
+  var insnBuf: pointer = nil
   let count = cs_disasm(handle, unsafeAddr data[0], csize_t(data.len),
-                        baseAddr, 0, addr insnPtr)
+                        baseAddr, 0, addr insnBuf)
 
-  if count == 0 or insnPtr == nil:
+  if count == 0 or insnBuf == nil:
     return @[]
 
-  defer: cs_free(insnPtr, count)
+  defer: cs_free(insnBuf, count)
 
   for i in 0 ..< int(count):
-    let raw = cast[ptr UncheckedArray[CsInsn]](insnPtr)
-    let insn = raw[i]
+    let p = csInsnAt(insnBuf, i)
+    let sz = int(csInsnGetSize(p))
 
     var rawBytes: seq[byte]
-    for j in 0 ..< min(int(insn.size), insn.bytes.len):
-      rawBytes.add(insn.bytes[j])
+    for j in 0 ..< min(sz, csInsnBytesLen):
+      rawBytes.add(csInsnGetByte(p, j))
 
     result.add(Instruction(
-      address:  insn.address,
-      mnemonic: charArrayToString(insn.mnemonic),
-      opStr:    charArrayToString(insn.opStr),
+      address:  csInsnGetAddress(p),
+      mnemonic: csInsnGetMnemonic(p),
+      opStr:    csInsnGetOpStr(p),
       rawBytes: rawBytes
     ))
 
