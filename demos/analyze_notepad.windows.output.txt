@@ -1,0 +1,17 @@
+[+] Processing binary: C:/Windows/System32/notepad.exe
+[+] Running analysis on C:/Windows/System32/notepad.exe
+[+] Format:       PE
+[+] Architecture: x64
+[+] Entry point:  0x00000000000019B0
+[+] Sections (8):
+    .text        vaddr=0x0000000000001000 offset=0x00001000 size=0x00027000 [r-x]
+    fothk        vaddr=0x0000000000028000 offset=0x00028000 size=0x00001000 [r-x]
+    .rdata       vaddr=0x0000000000029000 offset=0x00029000 size=0x0000B000 [r--]
+    .data        vaddr=0x0000000000034000 offset=0x00034000 size=0x00001000 [rw-]
+    .pdata       vaddr=0x0000000000037000 offset=0x00035000 size=0x00002000 [r--]
+    .didat       vaddr=0x0000000000039000 offset=0x00037000 size=0x00001000 [rw-]
+    .rsrc        vaddr=0x000000000003A000 offset=0x00038000 size=0x0001F000 [r--]
+    .reloc       vaddr=0x0000000000059000 offset=0x00057000 size=0x00001000 [r--]
+[+] Dangerous calls (2):
+    [!] memcpy
+    [!] memmove

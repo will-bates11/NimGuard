@@ -1,0 +1,100 @@
+[+] Processing binary: C:/Windows/System32/notepad.exe
+[+] Disassembly of .text section:
+    0x0000000000001000  int3
+    0x0000000000001001  int3
+    0x0000000000001002  int3
+    0x0000000000001003  int3
+    0x0000000000001004  int3
+    0x0000000000001005  int3
+    0x0000000000001006  int3
+    0x0000000000001007  int3
+    0x0000000000001008  mov        r11, rsp
+    0x000000000000100B  sub        rsp, 0x88
+    0x0000000000001012  mov        rax, qword ptr [rip + 0x333e7]
+    0x0000000000001019  xor        rax, rsp
+    0x000000000000101C  mov        qword ptr [rsp + 0x70], rax
+    0x0000000000001021  mov        rax, qword ptr [rsp + 0xb8]
+    0x0000000000001029  xor        r9d, r9d
+    0x000000000000102C  mov        qword ptr [r11 - 0x28], rax
+    0x0000000000001030  xor        r8d, r8d
+    0x0000000000001033  mov        rax, qword ptr [rsp + 0xb0]
+    0x000000000000103B  and        dword ptr [rsp + 0x6c], 0
+    0x0000000000001040  mov        dword ptr [rsp + 0x68], 8
+    0x0000000000001048  mov        rcx, qword ptr [rax]
+    0x000000000000104B  lea        rax, [r11 - 0x58]
+    0x000000000000104F  mov        qword ptr [r11 - 0x38], rcx
+    0x0000000000001053  lea        rcx, [rip + 0x3319e]
+    0x000000000000105A  and        dword ptr [rsp + 0x5c], 0
+    0x000000000000105F  mov        qword ptr [r11 - 0x60], rax
+    0x0000000000001063  mov        dword ptr [rsp + 0x20], 4
+    0x000000000000106B  mov        dword ptr [rsp + 0x58], 0x10
+    0x0000000000001073  call       0x12dc
+    0x0000000000001078  mov        rcx, qword ptr [rsp + 0x70]
+    0x000000000000107D  xor        rcx, rsp
+    0x0000000000001080  call       0x19e0
+    0x0000000000001085  add        rsp, 0x88
+    0x000000000000108C  ret
+    0x000000000000108D  int3
+    0x000000000000108E  int3
+    0x000000000000108F  int3
+    0x0000000000001090  int3
+    0x0000000000001091  int3
+    0x0000000000001092  int3
+    0x0000000000001093  int3
+    0x0000000000001094  push       rbp
+    0x0000000000001096  lea        rbp, [rsp - 0x1f]
+    0x000000000000109B  sub        rsp, 0xd0
+    0x00000000000010A2  mov        rax, qword ptr [rip + 0x33357]
+    0x00000000000010A9  xor        rax, rsp
+    0x00000000000010AC  mov        qword ptr [rbp + 0xf], rax
+    0x00000000000010B0  mov        rax, qword ptr [rbp + 0x7f]
+    0x00000000000010B4  xor        r9d, r9d
+    0x00000000000010B7  mov        qword ptr [rbp - 1], rax
+    0x00000000000010BB  mov        r10, rdx
+    0x00000000000010BE  mov        rax, qword ptr [rbp + 0x77]
+    0x00000000000010C2  or         rcx, 0xffffffffffffffff
+    0x00000000000010C6  mov        qword ptr [rbp - 0x11], rax
+    0x00000000000010CA  mov        rax, qword ptr [rbp + 0x6f]
+    0x00000000000010CE  lea        r8d, [r9 + 2]
+    0x00000000000010D2  mov        qword ptr [rbp - 0x21], rax
+    0x00000000000010D6  mov        rax, qword ptr [rbp + 0x67]
+    0x00000000000010DA  mov        qword ptr [rbp + 7], 4
+    0x00000000000010E2  mov        qword ptr [rbp - 9], 4
+    0x00000000000010EA  mov        qword ptr [rbp - 0x19], 8
+    0x00000000000010F2  mov        rdx, qword ptr [rax]
+    0x00000000000010F5  test       rdx, rdx
+    0x00000000000010F8  je         0x1110
+    0x00000000000010FA  mov        rax, rcx
+    0x00000000000010FD  inc        rax
+    0x0000000000001100  cmp        word ptr [rdx + rax*2], r9w
+    0x0000000000001105  jne        0x10fd
+    0x0000000000001107  lea        eax, [rax*2 + 2]
+    0x000000000000110E  jmp        0x111a
+    0x0000000000001110  lea        rdx, [rip + 0x2a0f9]
+    0x0000000000001117  mov        eax, r8d
+    0x000000000000111A  mov        dword ptr [rbp - 0x29], eax
+    0x000000000000111D  mov        rax, qword ptr [rbp + 0x5f]
+    0x0000000000001121  mov        qword ptr [rbp - 0x31], rdx
+    0x0000000000001125  mov        dword ptr [rbp - 0x25], r9d
+    0x0000000000001129  mov        rdx, qword ptr [rax]
+    0x000000000000112C  test       rdx, rdx
+    0x000000000000112F  je         0x1145
+    0x0000000000001131  inc        rcx
+    0x0000000000001134  cmp        word ptr [rdx + rcx*2], r9w
+    0x0000000000001139  jne        0x1131
+    0x000000000000113B  lea        r8d, [rcx*2 + 2]
+    0x0000000000001143  jmp        0x114c
+    0x0000000000001145  lea        rdx, [rip + 0x2a0c4]
+    0x000000000000114C  mov        rax, qword ptr [rbp + 0x57]
+    0x0000000000001150  mov        qword ptr [rbp - 0x51], rax
+    0x0000000000001154  mov        rax, qword ptr [rbp + 0x4f]
+    0x0000000000001158  mov        qword ptr [rbp - 0x41], rdx
+    0x000000000000115C  mov        rdx, r10
+    0x000000000000115F  mov        dword ptr [rbp - 0x39], r8d
+    0x0000000000001163  xor        r8d, r8d
+    0x0000000000001166  mov        dword ptr [rbp - 0x35], r9d
+    0x000000000000116A  mov        rcx, qword ptr [rax]
+    0x000000000000116D  lea        rax, [rsp + 0x30]
+    0x0000000000001172  mov        qword ptr [rbp - 0x61], rcx
+    0x0000000000001176  lea        rcx, [rip + 0x3307b]
+    0x000000000000117D  mov        qword ptr [rsp + 0x28], rax

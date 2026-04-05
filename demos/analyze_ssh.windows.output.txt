@@ -1,0 +1,15 @@
+[+] Processing binary: C:/Windows/System32/OpenSSH/ssh.exe
+[+] Running analysis on C:/Windows/System32/OpenSSH/ssh.exe
+[+] Format:       PE
+[+] Architecture: x64
+[+] Entry point:  0x00000000000A73E0
+[+] Sections (7):
+    .text        vaddr=0x0000000000001000 offset=0x00000400 size=0x000D6400 [r-x]
+    .rdata       vaddr=0x00000000000D8000 offset=0x000D6800 size=0x00050800 [r--]
+    .data        vaddr=0x0000000000129000 offset=0x00127000 size=0x00001E00 [rw-]
+    .pdata       vaddr=0x0000000000151000 offset=0x00128E00 size=0x00007A00 [r--]
+    .fptable     vaddr=0x0000000000159000 offset=0x00130800 size=0x00000200 [rw-]
+    .rsrc        vaddr=0x000000000015A000 offset=0x00130A00 size=0x00000A00 [r--]
+    .reloc       vaddr=0x000000000015B000 offset=0x00131400 size=0x00000E00 [r--]
+[+] Dangerous calls (1):
+    [!] read
