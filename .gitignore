@@ -45,3 +45,5 @@ demos/test_binary
 demos/test_binary.exe
 demos/test_binary_patched
 demos/test_binary_patched.exe
+
+.claude/
