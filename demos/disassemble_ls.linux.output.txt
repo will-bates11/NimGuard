@@ -1,0 +1,100 @@
+[+] Processing binary: /usr/bin/ls
+[+] Disassembly of .text section:
+    0x0000000000004D70  call       0x4750
+    0x0000000000004D75  call       0x4750
+    0x0000000000004D7A  call       0x4750
+    0x0000000000004D7F  call       0x4750
+    0x0000000000004D84  call       0x4750
+    0x0000000000004D89  call       0x4750
+    0x0000000000004D8E  call       0x4750
+    0x0000000000004D93  nop        word ptr cs:[rax + rax]
+    0x0000000000004D9D  nop        dword ptr [rax]
+    0x0000000000004DA0  endbr64
+    0x0000000000004DA4  push       rbp
+    0x0000000000004DA5  mov        rbp, rsp
+    0x0000000000004DA8  push       r15
+    0x0000000000004DAA  push       r14
+    0x0000000000004DAC  push       r13
+    0x0000000000004DAE  push       r12
+    0x0000000000004DB0  push       rbx
+    0x0000000000004DB1  sub        rsp, 0x108
+    0x0000000000004DB8  mov        dword ptr [rbp - 0xe4], edi
+    0x0000000000004DBE  mov        rbx, qword ptr [rsi]
+    0x0000000000004DC1  mov        qword ptr [rbp - 0xf0], rsi
+    0x0000000000004DC8  mov        rax, qword ptr fs:[0x28]
+    0x0000000000004DD1  mov        qword ptr [rbp - 0x38], rax
+    0x0000000000004DD5  xor        eax, eax
+    0x0000000000004DD7  test       rbx, rbx
+    0x0000000000004DDA  je         0x6d03
+    0x0000000000004DE0  mov        esi, 0x2f
+    0x0000000000004DE5  mov        rdi, rbx
+    0x0000000000004DE8  call       0x4970
+    0x0000000000004DED  mov        r12, rax
+    0x0000000000004DF0  test       rax, rax
+    0x0000000000004DF3  je         0x4e23
+    0x0000000000004DF5  lea        r13, [rax + 1]
+    0x0000000000004DF9  mov        rax, r13
+    0x0000000000004DFC  sub        rax, rbx
+    0x0000000000004DFF  cmp        rax, 6
+    0x0000000000004E03  jle        0x4e23
+    0x0000000000004E05  lea        rdi, [r12 - 6]
+    0x0000000000004E0A  mov        edx, 7
+    0x0000000000004E0F  lea        rsi, [rip + 0x16207]
+    0x0000000000004E16  call       0x4770
+    0x0000000000004E1B  test       eax, eax
+    0x0000000000004E1D  je         0x4f8e
+    0x0000000000004E23  mov        rax, qword ptr [rip + 0x1e1a6]
+    0x0000000000004E2A  mov        qword ptr [rip + 0x1e62f], rbx
+    0x0000000000004E31  lea        rsi, [rip + 0x1611c]
+    0x0000000000004E38  mov        edi, 6
+    0x0000000000004E3D  lea        r12, [rbp - 0xd4]
+    0x0000000000004E44  lea        r15, [rip + 0x1d4f5]
+    0x0000000000004E4B  mov        qword ptr [rax], rbx
+    0x0000000000004E4E  lea        rbx, [rip + 0x15ffd]
+    0x0000000000004E55  lea        r14, [rip + 0x187b4]
+    0x0000000000004E5C  call       0x4bc0
+    0x0000000000004E61  lea        rsi, [rip + 0x161c1]
+    0x0000000000004E68  mov        rdi, rbx
+    0x0000000000004E6B  call       0x48a0
+    0x0000000000004E70  mov        rdi, rbx
+    0x0000000000004E73  lea        rbx, [rip + 0x1431a]
+    0x0000000000004E7A  call       0x4860
+    0x0000000000004E7F  lea        rdi, [rip + 0x69fa]
+    0x0000000000004E86  mov        dword ptr [rip + 0x1e1f8], 2
+    0x0000000000004E90  call       0x18f20
+    0x0000000000004E95  movdqa     xmm0, xmmword ptr [rip + 0x18c53]
+    0x0000000000004E9D  mov        dword ptr [rip + 0x1e885], 0
+    0x0000000000004EA7  mov        byte ptr [rip + 0x1e87a], 1
+    0x0000000000004EAE  mov        qword ptr [rip + 0x1e867], 0
+    0x0000000000004EB9  mov        qword ptr [rbp - 0x118], -1
+    0x0000000000004EC4  mov        qword ptr [rbp - 0x120], -1
+    0x0000000000004ECF  mov        dword ptr [rbp - 0xf8], 0xffffffff
+    0x0000000000004ED9  mov        dword ptr [rbp - 0x100], 0xffffffff
+    0x0000000000004EE3  mov        dword ptr [rbp - 0x104], 0xffffffff
+    0x0000000000004EED  mov        dword ptr [rbp - 0xe8], 0xffffffff
+    0x0000000000004EF7  mov        byte ptr [rbp - 0x105], 0
+    0x0000000000004EFE  mov        qword ptr [rbp - 0x110], 0
+    0x0000000000004F09  movaps     xmmword ptr [rip + 0x1e800], xmm0
+    0x0000000000004F10  mov        rsi, qword ptr [rbp - 0xf0]
+    0x0000000000004F17  mov        r8, r12
+    0x0000000000004F1A  mov        rcx, r15
+    0x0000000000004F1D  mov        rdx, r14
+    0x0000000000004F20  mov        dword ptr [rbp - 0xd4], 0xffffffff
+    0x0000000000004F2A  mov        edi, dword ptr [rbp - 0xe4]
+    0x0000000000004F30  call       0x4900
+    0x0000000000004F35  cmp        eax, -1
+    0x0000000000004F38  je         0x56ef
+    0x0000000000004F3E  add        eax, 0x83
+    0x0000000000004F43  cmp        eax, 0x114
+    0x0000000000004F48  ja         0x6902
+    0x0000000000004F4E  movsxd     rax, dword ptr [rbx + rax*4]
+    0x0000000000004F52  add        rax, rbx
+    0x0000000000004F55  jmp        rax
+    0x0000000000004F58  xor        eax, eax
+    0x0000000000004F5A  cmp        dword ptr [rbp - 0xe8], 0
+    0x0000000000004F61  mov        byte ptr [rip + 0x1e110], 0
+    0x0000000000004F68  setne      al
+    0x0000000000004F6B  xor        r8d, r8d
+    0x0000000000004F6E  mov        byte ptr [rip + 0x1e3cd], 0
+    0x0000000000004F75  mov        dword ptr [rbp - 0xe8], eax
+    0x0000000000004F7B  mov        dword ptr [rbp - 0x100], r8d

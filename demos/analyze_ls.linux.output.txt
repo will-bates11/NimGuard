@@ -1,0 +1,40 @@
+[+] Processing binary: /usr/bin/ls
+[+] Running analysis on /usr/bin/ls
+[+] Format:       ELF
+[+] Architecture: x64
+[+] Entry point:  0x0000000000006D30
+[+] Sections (31):
+    (unnamed)    vaddr=0x0000000000000000 offset=0x00000000 size=0x00000000 [---]
+    .interp      vaddr=0x0000000000000318 offset=0x00000318 size=0x0000001C [r--]
+    .note.gnu.property vaddr=0x0000000000000338 offset=0x00000338 size=0x00000030 [r--]
+    .note.gnu.build-id vaddr=0x0000000000000368 offset=0x00000368 size=0x00000024 [r--]
+    .note.ABI-tag vaddr=0x000000000000038C offset=0x0000038C size=0x00000020 [r--]
+    .gnu.hash    vaddr=0x00000000000003B0 offset=0x000003B0 size=0x00000050 [r--]
+    .dynsym      vaddr=0x0000000000000400 offset=0x00000400 size=0x00000C00 [r--]
+    .dynstr      vaddr=0x0000000000001000 offset=0x00001000 size=0x00000614 [r--]
+    .gnu.version vaddr=0x0000000000001614 offset=0x00001614 size=0x00000100 [r--]
+    .gnu.version_r vaddr=0x0000000000001718 offset=0x00001718 size=0x000000F0 [r--]
+    .rela.dyn    vaddr=0x0000000000001808 offset=0x00001808 size=0x00001530 [r--]
+    .rela.plt    vaddr=0x0000000000002D38 offset=0x00002D38 size=0x000009C0 [r--]
+    .init        vaddr=0x0000000000004000 offset=0x00004000 size=0x0000001B [r-x]
+    .plt         vaddr=0x0000000000004020 offset=0x00004020 size=0x00000690 [r-x]
+    .plt.got     vaddr=0x00000000000046B0 offset=0x000046B0 size=0x00000040 [r-x]
+    .plt.sec     vaddr=0x00000000000046F0 offset=0x000046F0 size=0x00000680 [r-x]
+    .text        vaddr=0x0000000000004D70 offset=0x00004D70 size=0x000141C2 [r-x]
+    .fini        vaddr=0x0000000000018F34 offset=0x00018F34 size=0x0000000D [r-x]
+    .rodata      vaddr=0x0000000000019000 offset=0x00019000 size=0x0000516F [r--]
+    .eh_frame_hdr vaddr=0x000000000001E170 offset=0x0001E170 size=0x000005EC [r--]
+    .eh_frame    vaddr=0x000000000001E760 offset=0x0001E760 size=0x00001A50 [r--]
+    .init_array  vaddr=0x0000000000021F30 offset=0x00020F30 size=0x00000008 [rw-]
+    .fini_array  vaddr=0x0000000000021F38 offset=0x00020F38 size=0x00000008 [rw-]
+    .data.rel.ro vaddr=0x0000000000021F40 offset=0x00020F40 size=0x00000AF8 [rw-]
+    .dynamic     vaddr=0x0000000000022A38 offset=0x00021A38 size=0x00000200 [rw-]
+    .got         vaddr=0x0000000000022C38 offset=0x00021C38 size=0x000003C8 [rw-]
+    .data        vaddr=0x0000000000023000 offset=0x00022000 size=0x00000278 [rw-]
+    .bss         vaddr=0x0000000000023280 offset=0x00022278 size=0x00001298 [rw-]
+    .gnu_debugaltlink vaddr=0x0000000000000000 offset=0x00022278 size=0x00000049 [---]
+    .gnu_debuglink vaddr=0x0000000000000000 offset=0x000222C4 size=0x00000034 [---]
+    .shstrtab    vaddr=0x0000000000000000 offset=0x000222F8 size=0x0000012F [---]
+[+] Dangerous calls (2):
+    [!] memcpy
+    [!] memmove
