@@ -1,0 +1,11 @@
+[+] Processing binary: /tmp/test_elf
+[+] Loading rules from: demos/sample_rules.json
+[+] Loaded 5 rules from file.
+[+] Applying patches...
+[+] Applying patches to /tmp/test_elf
+[+] Output path: /tmp/patched_elf
+[+] Applying patch to function: memcpy
+    - New instructions: mov eax, 0; ret
+[+] Patch applied for memcpy
+[+] Patched binary written to: /tmp/patched_elf
+[+] Patching completed successfully.

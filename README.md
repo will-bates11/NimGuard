@@ -1,44 +1,54 @@
 # NimGuard
 
-**NimGuard** is a dynamic binary patching and instrumentation tool for legacy systems.
-It enables runtime analysis, patch injection, and behavior monitoring, all without requiring source code modifications.
-
-This tool is designed to help security researchers, DevSecOps engineers, and reverse engineers analyze, patch, and protect legacy binaries that are otherwise difficult to modify due to missing source code or vendor lock-in.
+NimGuard is a binary patching and instrumentation tool for ELF and PE binaries. It supports static analysis, rule-based patching, CPU emulation testing, and live process instrumentation on Linux and Windows.
 
 ## Features
 
-- **Binary Analysis:** Disassemble and analyze binaries using Capstone.
-- **Dynamic Patching:** Assemble and inject patches at runtime using Keystone.
-- **Instrumentation Hooks:** Insert monitoring hooks for logging, runtime protection, and anomaly detection.
-- **Rule-Based Engine:** Define patching rules via a custom DSL for flexible, scenario-based modifications.
-- **Live Debugging:** Emulate patched code before applying it using Unicorn.
-- **Cross-Platform Support:** Works on Windows, Linux, and macOS with proper dependencies installed.
+- **Binary analysis:** Pure-Nim ELF and PE header parsing. Detects architecture, sections, and dangerous function calls (strcpy, gets, sprintf, etc.)
+- **Disassembly:** Full `.text` section disassembly via Capstone (optional C library)
+- **Patching:** Rule-based static patching using JSON rule files; Keystone used for patch validation when available
+- **Emulation testing:** Run the `.text` section through Unicorn before committing a patch (optional C library)
+- **Live process instrumentation (Linux):** Attach to a running process via ptrace, read/write memory, inject breakpoints, trace syscalls
+- **Live process instrumentation (Windows):** Attach to a running process via Win32 debug API, read/write memory, inject breakpoints, trace debug events
+- **Cross-platform build:** Compiles on Linux, Windows, and macOS; C library features degrade gracefully when libraries are not installed
+
+## Platform Support
+
+| Feature | Linux | Windows | macOS |
+|---|---|---|---|
+| Binary parsing (ELF/PE) | Yes | Yes | Yes |
+| Disassembly (Capstone) | Yes | Yes | Yes |
+| Assembly/patching (Keystone) | Yes | Yes | Yes |
+| Emulation (Unicorn) | Yes | Yes | Yes |
+| ptrace instrumentation | Yes | No | No |
+| Win32 debug instrumentation | No | Yes | No |
+
+On macOS, runtime instrumentation flags (--attach, --inject, --breakpoint, --trace) will report that the platform is not supported.
 
 ## Installation
 
-### 1. Install Nim
+### 1. Install Nim 2.x
 
-Use [choosenim](https://github.com/dom96/choosenim) to install Nim:
+Use [choosenim](https://github.com/dom96/choosenim):
 
 ```bash
 curl https://nim-lang.org/choosenim/init.sh -sSf | sh
 ```
 
-Verify installation:
+Verify:
 
 ```bash
-nim -v
+nim --version
 ```
 
-### 2. Install System Dependencies
+### 2. Install C library dependencies (optional)
 
-NimGuard uses FFI bindings to C libraries that must be installed at the OS level.
-No Nim package manager install is needed for these.
+The C libraries are optional. NimGuard will still build and run without them; affected flags will report that the library is unavailable.
 
-**Capstone** (disassembly, required for `--analyze` and `--disasm`):
+**Capstone** (required for `--disasm` and dangerous-call detection in `--analyze`):
 
 ```bash
-# Linux (Debian/Ubuntu)
+# Debian/Ubuntu
 sudo apt-get install libcapstone-dev
 
 # macOS
@@ -46,49 +56,62 @@ brew install capstone
 
 # Windows
 # Download capstone.dll from https://www.capstone-engine.org/ and place it
-# in the same directory as the nimguard executable.
+# next to the nimguard executable.
 ```
 
-**Keystone** (assembly/patching, Phase 3, optional for now):
-See https://www.keystone-engine.org/
+**Keystone** (required for patch assembly validation):
 
-**Unicorn** (emulation, Phase 4, optional for now):
-See https://www.unicorn-engine.org/
+```bash
+# Debian/Ubuntu
+sudo apt-get install libkeystone-dev   # or build from source
 
-### 3. Clone the Repository
+# macOS
+brew install keystone
+
+# Windows
+# Download keystone.dll from https://www.keystone-engine.org/
+```
+
+**Unicorn** (required for `--emulate` and `--test-patch`):
+
+```bash
+# Debian/Ubuntu
+sudo apt-get install libunicorn-dev
+
+# macOS
+brew install unicorn
+
+# Windows
+# Download unicorn.dll from https://www.unicorn-engine.org/
+```
+
+### 3. Clone and build
 
 ```bash
 git clone https://github.com/will-bates11/nimguard.git
 cd nimguard
-```
-
-### 4. Build NimGuard
-
-```bash
 nimble build
 ```
 
-### 5. Run Tests
+The binary is placed at `./nimguard` (Linux/macOS) or `.\nimguard.exe` (Windows).
+
+### 4. Run tests
 
 ```bash
 nimble test
 ```
 
----
-
 ## Usage
 
 ### Analyze a binary
 
-Report format, architecture, sections, and dangerous function calls found:
+Report format, architecture, sections, and dangerous function calls:
 
 ```bash
 ./nimguard target_binary --analyze
 ```
 
-### Show full disassembly
-
-Print every instruction in the `.text` section:
+### Disassemble the .text section
 
 ```bash
 ./nimguard target_binary --disasm
@@ -96,27 +119,84 @@ Print every instruction in the `.text` section:
 
 ### Apply patches
 
+Apply default rules:
+
 ```bash
 ./nimguard target_binary --patch
+```
+
+Apply custom rules from a JSON file:
+
+```bash
 ./nimguard target_binary --patch --rules custom_rules.json
 ```
 
-### Enable live monitoring
+Write the patched binary to a specific output path:
+
+```bash
+./nimguard target_binary --patch --output patched_binary
+```
+
+### Emulate the .text section
+
+Run the `.text` section through Unicorn (up to 256 instructions):
+
+```bash
+./nimguard target_binary --emulate
+```
+
+### Test a patch in the emulator
+
+Apply a NOP patch at offset 0 in the emulator before writing it to disk:
+
+```bash
+./nimguard target_binary --test-patch
+```
+
+### Enable hook-based monitoring
+
+Register pre-execution hooks for functions flagged in analysis:
 
 ```bash
 ./nimguard target_binary --monitor
 ```
 
-### Rule-Based Patching
+### Live process instrumentation
 
-NimGuard supports a rule-based engine where you define patching rules:
+Attach to a running process (Linux and Windows only):
+
+```bash
+./nimguard --attach <pid>
+```
+
+Set a software breakpoint at a hex address:
+
+```bash
+./nimguard --attach <pid> --breakpoint 0x401000
+```
+
+Write bytes into process memory:
+
+```bash
+./nimguard --attach <pid> --inject 0x401000:9090
+```
+
+Trace syscalls (up to 64 events):
+
+```bash
+./nimguard --attach <pid> --trace
+```
+
+### Rule file format
+
+Patch rules are JSON:
 
 ```json
 {
   "rules": [
     {
       "identifier": "auth_bypass",
-      "description": "Bypass authentication in login function",
+      "description": "Bypass authentication check",
       "condition": "if function login() is called",
       "patch": "mov eax, 1; ret"
     }
@@ -124,50 +204,21 @@ NimGuard supports a rule-based engine where you define patching rules:
 }
 ```
 
-Load a custom rule set:
+## Architecture
+
+See [docs/architecture.md](docs/architecture.md) for a full breakdown of the module structure.
+
+## Building from source
 
 ```bash
-./nimguard target_binary --rules my_rules.json
+nimble build          # release build -> ./nimguard
+nimble test           # run all tests
 ```
 
----
+## License
 
-## Development Roadmap
-
-### Phase 0 and 1: Binary format parsing
-
-Implemented pure-Nim ELF and PE header parsing (no external libraries).
-
-### Phase 2: Capstone integration
-
-Real disassembly via Capstone FFI. The `--analyze` flag reports dangerous
-function calls found in the binary. The `--disasm` flag shows full `.text`
-disassembly.
-
-### Phase 3: Keystone integration (planned)
-
-Assembly and patch injection using Keystone.
-
-### Phase 4: Unicorn integration (planned)
-
-Emulation-based pre-flight testing of patches using Unicorn.
-
----
+MIT. See [LICENSE](LICENSE).
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b my-new-feature`
-3. Commit your changes: `git commit -m "Add my feature"`
-4. Push to the branch: `git push origin my-new-feature`
-5. Submit a pull request
-
-For major changes, please open an issue first to discuss your proposal.
-
----
-
-## Legal Disclaimer
-
-Use this tool only in a controlled and legal environment.
-NimGuard is designed for research, security analysis, and ethical hacking purposes.
-Misuse of this software in unauthorized systems may violate laws and regulations.
+See [CONTRIBUTING.md](CONTRIBUTING.md).

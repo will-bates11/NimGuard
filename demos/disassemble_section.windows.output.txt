@@ -1,0 +1,51 @@
+$ demos\disassemble_section.bat
+Disassembling .text section of: C:\...\demos\test_binary.exe
+---------------------------------------
+[+] Processing binary: demos/test_binary.exe
+[+] Disassembly of .text section:
+    0x0000000000001000  push       rbp
+    0x0000000000001001  mov        rbp, rsp
+    0x0000000000001004  mov        qword ptr [rbp + 0x10], rcx
+    0x0000000000001008  mov        qword ptr [rbp + 0x18], rdx
+    0x000000000000100C  mov        qword ptr [rbp + 0x20], r8
+    0x0000000000001010  mov        dword ptr [rbp + 0x28], r9d
+    0x0000000000001014  nop
+    0x0000000000001015  pop        rbp
+    0x0000000000001016  ret
+    0x0000000000001017  push       rbp
+    0x0000000000001018  mov        rbp, rsp
+    0x000000000000101B  sub        rsp, 0x30
+    0x000000000000101F  mov        dword ptr [rbp - 4], 0xff
+    0x0000000000001026  mov        rax, qword ptr [rip + 0x20f03]
+    0x000000000000102D  mov        dword ptr [rax], 1
+    0x0000000000001033  call       0x1075
+    0x0000000000001038  mov        dword ptr [rbp - 4], eax
+    0x000000000000103B  nop
+    0x000000000000103C  nop
+    0x000000000000103D  mov        eax, dword ptr [rbp - 4]
+    0x0000000000001040  add        rsp, 0x30
+    0x0000000000001044  pop        rbp
+    0x0000000000001045  ret
+    0x0000000000001046  push       rbp
+    0x0000000000001047  mov        rbp, rsp
+    0x000000000000104A  sub        rsp, 0x30
+    0x000000000000104E  mov        dword ptr [rbp - 4], 0xff
+    0x0000000000001055  mov        rax, qword ptr [rip + 0x20ed4]
+    0x000000000000105C  mov        dword ptr [rax], 0
+    0x0000000000001062  call       0x1075
+    0x0000000000001067  mov        dword ptr [rbp - 4], eax
+    0x000000000000106A  nop
+    0x000000000000106B  nop
+    0x000000000000106C  mov        eax, dword ptr [rbp - 4]
+    0x000000000000106F  add        rsp, 0x30
+    0x0000000000001073  pop        rbp
+    0x0000000000001074  ret
+    0x0000000000001075  push       rbp
+    0x0000000000001076  mov        rbp, rsp
+    0x0000000000001079  sub        rsp, 0x90
+    0x0000000000001080  mov        qword ptr [rbp - 0x10], 0
+    0x0000000000001088  mov        dword ptr [rbp - 0x20], 0x30
+    0x000000000000108F  mov        eax, dword ptr [rbp - 0x20]
+    ... (output continues for the full .text section)
+
+Platform: Windows 11, nimguard.exe x64, capstone 4.0.2

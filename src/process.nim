@@ -155,6 +155,23 @@ when defined(linux):
       return WaitResult(status: wsStopped, signal: wStopSig(status))
     return WaitResult(status: wsUnknown)
 
+  # Non-blocking wait check (WNOHANG). Returns wsRunning when the process
+  # has not yet changed state. Use in poll loops with a timeout.
+  proc waitForSignalNonBlock*(pid: int): WaitResult =
+    var status: cint = 0
+    let ret = waitpid(Pid(pid), status, WNOHANG)
+    if ret == 0:
+      return WaitResult(status: wsRunning)
+    if ret == -1:
+      return WaitResult(status: wsUnknown)
+    if wIfExited(status):
+      return WaitResult(status: wsExited, exitCode: wExitStatus(status))
+    if wIfSignaled(status):
+      return WaitResult(status: wsSignaled, signal: wTermSig(status))
+    if wIfStopped(status):
+      return WaitResult(status: wsStopped, signal: wStopSig(status))
+    return WaitResult(status: wsUnknown)
+
   # Read size bytes from the target process starting at address.
   # Uses PTRACE_PEEKDATA which transfers one machine word at a time.
   # Returns (bytes, result). On error, bytes may be partial.

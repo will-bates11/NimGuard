@@ -13,7 +13,7 @@ suite "Runtime Module - Platform":
 
   test "attachProcess returns failure on non-Linux":
     when not defined(linux):
-      let r = attachProcess(1)
+      let r = runtime.attachProcess(1)
       check r.success == false
     else:
       # On Linux this would actually attach; skip the negative test.
@@ -21,7 +21,7 @@ suite "Runtime Module - Platform":
 
   test "detachProcess returns failure on non-Linux":
     when not defined(linux):
-      let r = detachProcess(1)
+      let r = runtime.detachProcess(1)
       check r.success == false
     else:
       check true

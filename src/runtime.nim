@@ -3,6 +3,8 @@
 # On Windows, delegates to the Win32-based implementation in winprocess.nim.
 # On other platforms, all procedures return a platform-not-supported error.
 import disassembler, binary
+when defined(linux):
+  import times, os
 
 when defined(linux):
   import process
@@ -124,30 +126,51 @@ proc patchProcessMemory*(pid: int, address: uint64,
 
 proc hookFunction*(pid: int, address: uint64,
                    hookAddress: uint64): (seq[byte], RuntimeResult) =
+  # Build a JMP sequence. Try rel32 (5 bytes) first; fall back to
+  # absolute indirect JMP (14 bytes: FF 25 00 00 00 00 + 8-byte addr)
+  # when the displacement overflows a signed 32-bit value.
+  let rel32 = int64(hookAddress) - int64(address) - 5
+  let useAbs = rel32 > int64(high(int32)) or rel32 < int64(low(int32))
+  let patchSize = if useAbs: 14 else: 5
   when defined(linux):
-    let (original, rr) = process.readProcessMemory(pid, address, 5)
+    let (original, rr) = process.readProcessMemory(pid, address, patchSize)
     if not rr.success:
       return (@[], rtErr("hookFunction read: " & rr.msg))
-    let rel32 = int64(hookAddress) - int64(address) - 5
-    var jmpBytes: seq[byte] = @[0xE9'u8]
-    jmpBytes.add(byte(rel32 and 0xFF))
-    jmpBytes.add(byte((rel32 shr 8) and 0xFF))
-    jmpBytes.add(byte((rel32 shr 16) and 0xFF))
-    jmpBytes.add(byte((rel32 shr 24) and 0xFF))
+    if original.len < patchSize:
+      return (@[], rtErr("hookFunction: not enough bytes at target"))
+    var jmpBytes: seq[byte]
+    if useAbs:
+      # FF 25 00 00 00 00 = JMP [RIP+0]; followed by 8-byte absolute target
+      jmpBytes = @[0xFF'u8, 0x25'u8, 0x00'u8, 0x00'u8, 0x00'u8, 0x00'u8]
+      for i in 0 ..< 8:
+        jmpBytes.add(byte((hookAddress shr (i * 8)) and 0xFF))
+    else:
+      jmpBytes = @[0xE9'u8]
+      jmpBytes.add(byte(rel32 and 0xFF))
+      jmpBytes.add(byte((rel32 shr 8) and 0xFF))
+      jmpBytes.add(byte((rel32 shr 16) and 0xFF))
+      jmpBytes.add(byte((rel32 shr 24) and 0xFF))
     let wr = process.writeProcessMemory(pid, address, jmpBytes)
     if not wr.success:
       return (@[], rtErr("hookFunction write: " & wr.msg))
     return (original, rtOk())
   elif defined(windows):
-    let (original, rr) = winprocess.readProcessMemory(pid, address, 5)
+    let (original, rr) = winprocess.readProcessMemory(pid, address, patchSize)
     if not rr.success:
       return (@[], rtErr("hookFunction read: " & rr.msg))
-    let rel32 = int64(hookAddress) - int64(address) - 5
-    var jmpBytes: seq[byte] = @[0xE9'u8]
-    jmpBytes.add(byte(rel32 and 0xFF))
-    jmpBytes.add(byte((rel32 shr 8) and 0xFF))
-    jmpBytes.add(byte((rel32 shr 16) and 0xFF))
-    jmpBytes.add(byte((rel32 shr 24) and 0xFF))
+    if original.len < patchSize:
+      return (@[], rtErr("hookFunction: not enough bytes at target"))
+    var jmpBytes: seq[byte]
+    if useAbs:
+      jmpBytes = @[0xFF'u8, 0x25'u8, 0x00'u8, 0x00'u8, 0x00'u8, 0x00'u8]
+      for i in 0 ..< 8:
+        jmpBytes.add(byte((hookAddress shr (i * 8)) and 0xFF))
+    else:
+      jmpBytes = @[0xE9'u8]
+      jmpBytes.add(byte(rel32 and 0xFF))
+      jmpBytes.add(byte((rel32 shr 8) and 0xFF))
+      jmpBytes.add(byte((rel32 shr 16) and 0xFF))
+      jmpBytes.add(byte((rel32 shr 24) and 0xFF))
     let wr = winprocess.writeProcessMemory(pid, address, jmpBytes)
     if not wr.success:
       return (@[], rtErr("hookFunction write: " & wr.msg))
@@ -159,8 +182,25 @@ proc hookFunction*(pid: int, address: uint64,
 # Disassembly at a live process address.
 # ---------------------------------------------------------------------------
 
+# Detect architecture of a running process from its executable on disk.
+# Falls back to archX64 when the path cannot be read or parsed.
+proc detectProcessArch*(pid: int): Architecture =
+  when defined(linux):
+    let exePath = "/proc/" & $pid & "/exe"
+    let info = parseBinary(exePath)
+    if info.format != bfUnknown:
+      return info.architecture
+    return archX64
+  elif defined(windows):
+    # IsWow64Process tells us if a 32-bit process is running on 64-bit Windows.
+    # For simplicity, default to x64 on Windows targets.
+    return archX64
+  else:
+    return archX64
+
 proc disassembleAtAddress*(pid: int, address: uint64,
-                           count: int): seq[Instruction] =
+                           count: int,
+                           arch: Architecture = archX64): seq[Instruction] =
   if count <= 0:
     return @[]
   let readSize = count * 15
@@ -168,7 +208,7 @@ proc disassembleAtAddress*(pid: int, address: uint64,
     let (bytes, rr) = process.readProcessMemory(pid, address, readSize)
     if not rr.success or bytes.len == 0:
       return @[]
-    let instrs = disassembleBytes(bytes, address, archX64)
+    let instrs = disassembleBytes(bytes, address, arch)
     if instrs.len == 0:
       return @[]
     if instrs.len <= count:
@@ -178,7 +218,7 @@ proc disassembleAtAddress*(pid: int, address: uint64,
     let (bytes, rr) = winprocess.readProcessMemory(pid, address, readSize)
     if not rr.success or bytes.len == 0:
       return @[]
-    let instrs = disassembleBytes(bytes, address, archX64)
+    let instrs = disassembleBytes(bytes, address, arch)
     if instrs.len == 0:
       return @[]
     if instrs.len <= count:
@@ -191,15 +231,32 @@ proc disassembleAtAddress*(pid: int, address: uint64,
 # Syscall monitoring (Linux only; empty on other platforms).
 # ---------------------------------------------------------------------------
 
-proc monitorSyscalls*(pid: int, maxEvents: int): seq[SyscallEvent] =
+proc monitorSyscalls*(pid: int, maxSyscalls: int = 1000,
+                      timeoutMs: int = 0): seq[SyscallEvent] =
   when defined(linux):
     var events: seq[SyscallEvent]
     var i = 0
-    while i < maxEvents:
+    let startMs = if timeoutMs > 0: int64(epochTime() * 1000.0) else: 0i64
+    while i < maxSyscalls:
+      # Wall-clock timeout check (WNOHANG-style: checked before blocking).
+      if timeoutMs > 0 and
+         int64(epochTime() * 1000.0) - startMs >= int64(timeoutMs):
+        break
       let sr = process.stepToSyscall(pid)
       if not sr.success:
         break
-      let wr = process.waitForSignal(pid)
+      # Poll with WNOHANG so the timeout check above runs on each iteration.
+      var wr = process.waitForSignalNonBlock(pid)
+      var pollMs = 0
+      while wr.status == wsRunning:
+        if timeoutMs > 0 and
+           int64(epochTime() * 1000.0) - startMs >= int64(timeoutMs):
+          break
+        sleep(1)
+        pollMs += 1
+        wr = process.waitForSignalNonBlock(pid)
+      if wr.status == wsRunning:
+        break  # timed out waiting for process stop
       if wr.status == wsExited or wr.status == wsSignaled:
         break
       if wr.status != wsStopped:
@@ -216,3 +273,48 @@ proc monitorSyscalls*(pid: int, maxEvents: int): seq[SyscallEvent] =
     return events
   else:
     return @[]
+
+# ---------------------------------------------------------------------------
+# Windows-only: remote memory allocation and thread suspension helpers.
+# These were formerly in winruntime.nim; merged here under Windows guards.
+# ---------------------------------------------------------------------------
+
+proc allocateRemoteMemory*(pid: int, size: int): (uint64, RuntimeResult) =
+  when defined(windows):
+    let (remoteAddr, pr) = winprocess.allocateRemoteMemory(pid, size)
+    if not pr.success:
+      return (0'u64, rtErr("allocateRemoteMemory: " & pr.msg))
+    return (remoteAddr, rtOk())
+  else:
+    return (0'u64, rtErr("platform not supported"))
+
+# Suspend all threads of a process. Returns the count of threads suspended.
+# Useful before writing to process memory to ensure consistency.
+proc suspendAllThreads*(pid: int): (int, RuntimeResult) =
+  when defined(windows):
+    let (tids, er) = winprocess.enumerateThreads(pid)
+    if not er.success:
+      return (0, rtErr("suspendAllThreads: " & er.msg))
+    var suspended = 0
+    for tid in tids:
+      let sr = winprocess.suspendThread(tid)
+      if sr.success:
+        inc suspended
+    return (suspended, rtOk())
+  else:
+    return (0, rtErr("platform not supported"))
+
+# Resume all threads of a process.
+proc resumeAllThreads*(pid: int): (int, RuntimeResult) =
+  when defined(windows):
+    let (tids, er) = winprocess.enumerateThreads(pid)
+    if not er.success:
+      return (0, rtErr("resumeAllThreads: " & er.msg))
+    var resumed = 0
+    for tid in tids:
+      let rr = winprocess.resumeThread(tid)
+      if rr.success:
+        inc resumed
+    return (resumed, rtOk())
+  else:
+    return (0, rtErr("platform not supported"))

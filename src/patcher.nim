@@ -1,4 +1,5 @@
 # NimGuard - Binary Analysis and Static Patching
+import strutils
 import rules, binary, disassembler, assembler, emulator
 
 type
@@ -9,6 +10,7 @@ type
     entryPoint*:      uint64
     sections*:        seq[Section]
     vulnerabilities*: seq[string]
+    errorMsg*:        string
 
 # Analyze a binary file and return structured metadata plus detected
 # vulnerability sites. Uses Capstone disassembly (when available) to
@@ -21,6 +23,7 @@ proc analyzeBinary*(filePath: string): BinaryAnalysis =
   result.architecture = info.architecture
   result.entryPoint   = info.entryPoint
   result.sections     = info.sections
+  result.errorMsg     = info.errorMsg
 
   if info.format == bfUnknown or info.rawBytes.len == 0:
     result.vulnerabilities = @[]
@@ -135,23 +138,77 @@ proc testPatchInEmulator*(srcPath: string, offset: int,
   res.success
 
 # Apply patches based on detected vulnerabilities and defined rules.
-# outputPath is optional; when non-empty it is recorded in the log for
-# use with patchBinaryAtOffset / assembleAndPatch in a follow-up step.
+# Assembles each rule's patch instructions with Keystone, locates the CALL
+# site in the binary via disassembly, converts the virtual address to a file
+# offset, and writes the bytes directly into the output file.
+# When outputPath is non-empty the patched copy is written there; otherwise
+# the source binary is patched in-place.
 proc applyPatches*(binaryPath: string, rules: seq[PatchRule],
                    outputPath: string = ""): bool =
   echo "[+] Applying patches to ", binaryPath
-  if outputPath != "":
-    echo "[+] Output path: ", outputPath
-  let analysis = analyzeBinary(binaryPath)
+  let info = parseBinary(binaryPath)
+  if info.format == bfUnknown:
+    if info.errorMsg.len > 0:
+      echo "[-] ", info.errorMsg
+    else:
+      echo "[-] Cannot patch: unknown binary format"
+    return false
+
+  # Determine patch target. If an output path is specified, copy the original
+  # binary there first so we write into the output, not the source.
+  let patchTarget = if outputPath != "": outputPath else: binaryPath
+  if outputPath != "" and outputPath != binaryPath:
+    try:
+      writeFile(outputPath, readFile(binaryPath))
+      echo "[+] Output path: ", outputPath
+    except CatchableError as e:
+      echo "[-] Failed to create output file: ", e.msg
+      return false
+
+  # Disassemble .text to find dangerous call sites with their addresses.
+  let instructions = disassembleSection(info, ".text")
+  let callSites    = findDangerousCallSites(instructions)
+
+  # Also collect names detected via import string scanning as a fallback.
+  let importNames = scanImportStrings(info)
 
   var patchesApplied = false
-  for vuln in analysis.vulnerabilities:
-    for rule in rules:
-      if vuln == rule.identifier:
-        if applyPatch(binaryPath, rule.identifier, rule.patch):
-          echo "[+] Patch applied for ", vuln
-          patchesApplied = true
-        else:
-          echo "[-] Failed to patch ", vuln
+
+  for rule in rules:
+    var callSiteFound = false
+
+    # Try to patch each CALL instruction that matches this rule.
+    for (name, siteVA) in callSites:
+      if name != rule.identifier:
+        continue
+      callSiteFound = true
+
+      let fileOff = virtualToFileOffset(info, siteVA)
+      if fileOff < 0:
+        echo "[-] No file offset for ", name, " at 0x", toHex(siteVA, 16)
+        continue
+
+      if not isKeystoneAvailable():
+        echo "[-] Keystone unavailable, cannot assemble patch for: ", rule.identifier
+        break
+
+      let assembled = assembleBlock(rule.patch, info.architecture)
+      if assembled.bytes.len == 0:
+        echo "[-] Assembly failed for rule '", rule.identifier, "': ", rule.patch
+        continue
+
+      if patchBinaryAtOffset(patchTarget, patchTarget, fileOff, assembled.bytes):
+        echo "[+] Patched '", name, "' at 0x", toHex(siteVA, 16),
+             " (file=0x", toHex(fileOff, 8),
+             ", ", assembled.bytes.len, " byte(s))"
+        patchesApplied = true
+      else:
+        echo "[-] Write failed for ", name, " at file offset 0x", toHex(fileOff, 8)
+
+    # If no CALL site was found by disassembly, check import string detection.
+    if not callSiteFound and rule.identifier in importNames:
+      echo "[!] '", rule.identifier,
+           "' detected via import strings but no CALL site found in .text",
+           " (PLT-only import, no direct patch target)"
 
   return patchesApplied

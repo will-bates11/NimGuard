@@ -1,0 +1,2 @@
+[+] Processing binary: /tmp/test_elf
+[-] Unicorn library not available. Install libunicorn-dev to enable emulation.

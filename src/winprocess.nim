@@ -317,8 +317,11 @@ when defined(windows):
                                 addr written)
     # Restore original page protection.
     var dummy: DWORD = 0
-    discard VirtualProtectEx(h, cast[pointer](address), bytes.len,
-                             oldProtect, addr dummy)
+    let restoreOk = VirtualProtectEx(h, cast[pointer](address), bytes.len,
+                                     oldProtect, addr dummy)
+    if restoreOk == BOOL(0):
+      echo "[-] Warning: VirtualProtectEx restore failed at 0x", toHex(address),
+           " err=", GetLastError()
     if ok == BOOL(0):
       return wpErr(wpWriteMem, "addr=0x" & toHex(address) &
                " err=" & $GetLastError())

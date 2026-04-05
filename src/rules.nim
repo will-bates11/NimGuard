@@ -31,16 +31,19 @@ proc loadRules*(filePath: string): seq[PatchRule] =
     echo "[-] Error: Rules file not found: ", filePath
     return @[]
 
-  let data = readFile(filePath)
   try:
+    let data = readFile(filePath)
     let jsonRules = parseJson(data)
     for rule in jsonRules["rules"]:
-      result.add(PatchRule(
-        identifier: rule["identifier"].getStr(),
-        description: rule["description"].getStr(),
-        condition: rule["condition"].getStr(),
-        patch: rule["patch"].getStr()
-      ))
+      try:
+        result.add(PatchRule(
+          identifier: rule["identifier"].getStr(),
+          description: rule["description"].getStr(),
+          condition: rule["condition"].getStr(),
+          patch: rule["patch"].getStr()
+        ))
+      except CatchableError as e:
+        echo "[-] Warning: Skipping invalid rule: ", e.msg
     echo "[+] Loaded ", result.len, " rules from file."
   except CatchableError as e:
     echo "[-] Error: Failed to parse rules file: ", e.msg

@@ -24,6 +24,8 @@ proc showHelp() =
     --inject <addr>:<hex>  Write hex bytes into process memory at hex address
     --breakpoint <addr> Set a software breakpoint at hex address
     --trace             Trace syscalls until the process exits
+    --trace-max <n>     Maximum number of syscall events to collect (default 1000)
+    --trace-timeout <ms>  Wall-clock timeout for syscall tracing in milliseconds
 
     --help              Show this help message
 
@@ -46,6 +48,8 @@ proc formatFlags(flags: SectionFlags): string =
   result.add(if flags.executable: "x" else: "-")
 
 proc printAnalysis(analysis: BinaryAnalysis) =
+  if analysis.errorMsg.len > 0:
+    echo "[-] ", analysis.errorMsg
   echo "[+] Format:       ", $analysis.format
   echo "[+] Architecture: ", $analysis.architecture
   echo "[+] Entry point:  0x", toHex(analysis.entryPoint, 16)
@@ -69,7 +73,10 @@ proc printAnalysis(analysis: BinaryAnalysis) =
 proc printEmulation(binaryPath: string) =
   let info = parseBinary(binaryPath)
   if info.format == bfUnknown:
-    echo "[-] Cannot emulate: unknown binary format"
+    if info.errorMsg.len > 0:
+      echo "[-] ", info.errorMsg
+    else:
+      echo "[-] Cannot emulate: unknown binary format"
     return
 
   if not isUnicornAvailable():
@@ -109,7 +116,10 @@ proc printEmulation(binaryPath: string) =
 proc printDisassembly(binaryPath: string) =
   let info = parseBinary(binaryPath)
   if info.format == bfUnknown:
-    echo "[-] Cannot disassemble: unknown binary format"
+    if info.errorMsg.len > 0:
+      echo "[-] ", info.errorMsg
+    else:
+      echo "[-] Cannot disassemble: unknown binary format"
     return
 
   if not isCapstoneAvailable():
@@ -131,7 +141,7 @@ proc parseHexAddr(s: string): uint64 =
   let trimmed = if s.len > 2 and s[0..1] == "0x": s[2..^1] else: s
   try:
     result = parseHexInt(trimmed).uint64
-  except:
+  except CatchableError:
     result = 0
 
 # Parse a hex byte string (e.g. "9090CC") into a seq[byte].
@@ -140,12 +150,13 @@ proc parseHexBytes(s: string): seq[byte] =
   while i + 1 < s.len:
     try:
       result.add(byte(parseHexInt(s[i..i+1])))
-    except:
+    except CatchableError:
       return @[]
     i += 2
 
 proc runAttachMode(pid: int, injectSpec: string, bpAddrStr: string,
-                   trace: bool) =
+                   trace: bool, traceMax: int = 1000,
+                   traceTimeout: int = 0, monitorBinary: string = "") =
   if not isRuntimeAvailable():
     echo "[-] Live process instrumentation is not available on this platform."
     return
@@ -156,6 +167,14 @@ proc runAttachMode(pid: int, injectSpec: string, bpAddrStr: string,
     echo "[-] Attach failed: ", ar.msg
     return
   echo "[+] Attached."
+
+  if monitorBinary != "":
+    echo "[+] Setting up breakpoint hooks for: ", monitorBinary
+    let hooked = setupHooks(monitorBinary, pid)
+    if hooked.len > 0:
+      echo "[+] ", hooked.len, " breakpoint(s) injected."
+    else:
+      echo "[!] No breakpoints injected (no dangerous CALL sites found or Capstone unavailable)."
 
   if bpAddrStr != "":
     let bpAddr = parseHexAddr(bpAddrStr)
@@ -187,8 +206,9 @@ proc runAttachMode(pid: int, injectSpec: string, bpAddrStr: string,
           echo "[-] Patch failed: ", wr.msg
 
   if trace:
-    echo "[+] Tracing syscalls (up to 64 events)..."
-    let events = runtime.monitorSyscalls(pid, 64)
+    let timeoutDesc = if traceTimeout > 0: ", timeout " & $traceTimeout & "ms" else: ""
+    echo "[+] Tracing syscalls (max ", traceMax, " events", timeoutDesc, ")..."
+    let events = runtime.monitorSyscalls(pid, traceMax, traceTimeout)
     if events.len == 0:
       echo "    (no syscall events captured)"
     else:
@@ -210,6 +230,8 @@ proc main() =
   var attachPid: int = -1
   var injectSpec: string
   var bpAddrStr: string
+  var traceMax: int = 1000
+  var traceTimeout: int = 0
 
   while true:
     p.next()
@@ -239,19 +261,71 @@ proc main() =
       of "trace":
         trace = true
       of "rules":
-        ruleFile = p.val
+        if p.val != "":
+          ruleFile = p.val
+        else:
+          p.next()
+          if p.kind == cmdArgument: ruleFile = p.key
+          else:
+            echo "Error: --rules requires a file path."
+            return
       of "output":
-        outputPath = p.val
+        if p.val != "":
+          outputPath = p.val
+        else:
+          p.next()
+          if p.kind == cmdArgument: outputPath = p.key
+          else:
+            echo "Error: --output requires a file path."
+            return
       of "attach":
+        var attachVal: string
+        if p.val != "":
+          attachVal = p.val
+        else:
+          p.next()
+          if p.kind == cmdArgument:
+            attachVal = p.key
+          else:
+            echo "Error: --attach requires an integer PID."
+            return
         try:
-          attachPid = parseInt(p.val)
-        except:
+          attachPid = parseInt(attachVal)
+        except CatchableError:
           echo "Error: --attach requires an integer PID."
           return
       of "inject":
-        injectSpec = p.val
+        if p.val != "":
+          injectSpec = p.val
+        else:
+          p.next()
+          if p.kind == cmdArgument: injectSpec = p.key
+          else:
+            echo "Error: --inject requires <addr>:<hex> value."
+            return
       of "breakpoint":
-        bpAddrStr = p.val
+        if p.val != "":
+          bpAddrStr = p.val
+        else:
+          p.next()
+          if p.kind == cmdArgument: bpAddrStr = p.key
+          else:
+            echo "Error: --breakpoint requires an address."
+            return
+      of "trace-max":
+        let v = if p.val != "": p.val
+                else:
+                  p.next()
+                  if p.kind == cmdArgument: p.key else: "1000"
+        try: traceMax = parseInt(v)
+        except CatchableError: echo "Warning: invalid --trace-max value, using 1000"
+      of "trace-timeout":
+        let v = if p.val != "": p.val
+                else:
+                  p.next()
+                  if p.kind == cmdArgument: p.key else: "0"
+        try: traceTimeout = parseInt(v)
+        except CatchableError: echo "Warning: invalid --trace-timeout value, using 0"
       else:
         echo "Unknown option: --", p.key
         showHelp()
@@ -259,7 +333,9 @@ proc main() =
 
   # Runtime attach mode: no binary path needed.
   if attachPid >= 0:
-    runAttachMode(attachPid, injectSpec, bpAddrStr, trace)
+    let monBin = if monitor and binaryPath != "": binaryPath else: ""
+    runAttachMode(attachPid, injectSpec, bpAddrStr, trace,
+                  traceMax, traceTimeout, monBin)
     return
 
   if binaryPath == "":
@@ -297,6 +373,8 @@ proc main() =
   if testPatch:
     echo "[+] Testing patch in emulator..."
     let info = parseBinary(binaryPath)
+    if info.errorMsg.len > 0:
+      echo "[-] ", info.errorMsg
     if info.format != bfUnknown and info.rawBytes.len > 0:
       let nop = @[0x90'u8]
       let ok = testPatchInEmulator(binaryPath, 0, nop, info.architecture)
@@ -309,7 +387,7 @@ proc main() =
 
   if monitor:
     echo "[+] Enabling runtime monitoring..."
-    setupHooks(binaryPath)
+    discard setupHooks(binaryPath)
     echo "[+] Monitoring started."
 
 when isMainModule:

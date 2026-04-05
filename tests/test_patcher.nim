@@ -121,16 +121,17 @@ suite "Patcher Module Tests":
   test "assembleAndPatch writes assembled bytes when Keystone available":
     if not isKeystoneAvailable():
       skip()
-    let srcFile = "test_aap_src.bin"
-    let dstFile = "test_aap_dst.bin"
-    defer:
-      removeFile(srcFile)
-      removeFile(dstFile)
-    writeFile(srcFile, newString(8))
-    check assembleAndPatch(srcFile, dstFile, 0, "nop", archX64) == true
-    let result = readFile(dstFile)
-    check result.len == 8
-    check byte(result[0]) == 0x90'u8
+    else:
+      let srcFile = "test_aap_src.bin"
+      let dstFile = "test_aap_dst.bin"
+      defer:
+        removeFile(srcFile)
+        removeFile(dstFile)
+      writeFile(srcFile, newString(8))
+      check assembleAndPatch(srcFile, dstFile, 0, "nop", archX64) == true
+      let result = readFile(dstFile)
+      check result.len == 8
+      check byte(result[0]) == 0x90'u8
 
 suite "Emulation-Based Patch Testing":
 
@@ -146,35 +147,39 @@ suite "Emulation-Based Patch Testing":
   test "testPatchInEmulator returns false for non-existent source file":
     if not isUnicornAvailable():
       skip()
-    check testPatchInEmulator("no_such_binary_xyz.bin", 0,
-                              @[0x90'u8], archX64) == false
+    else:
+      check testPatchInEmulator("no_such_binary_xyz.bin", 0,
+                                @[0x90'u8], archX64) == false
 
   test "testPatchInEmulator returns false for empty patch bytes":
     if not isUnicornAvailable():
       skip()
-    let srcFile = "test_emu_patch_src.bin"
-    defer: removeFile(srcFile)
-    writeFile(srcFile, newString(16))
-    check testPatchInEmulator(srcFile, 0, @[], archX64) == false
+    else:
+      let srcFile = "test_emu_patch_src.bin"
+      defer: removeFile(srcFile)
+      writeFile(srcFile, newString(16))
+      check testPatchInEmulator(srcFile, 0, @[], archX64) == false
 
   test "testPatchInEmulator returns false when offset is out of range":
     if not isUnicornAvailable():
       skip()
-    let srcFile = "test_emu_oob.bin"
-    defer: removeFile(srcFile)
-    writeFile(srcFile, newString(4))
-    check testPatchInEmulator(srcFile, 100, @[0x90'u8], archX64) == false
+    else:
+      let srcFile = "test_emu_oob.bin"
+      defer: removeFile(srcFile)
+      writeFile(srcFile, newString(4))
+      check testPatchInEmulator(srcFile, 100, @[0x90'u8], archX64) == false
 
   test "testPatchInEmulator executes a NOP sled patch without error":
     if not isUnicornAvailable():
       skip()
-    let srcFile = "test_emu_nop.bin"
-    defer: removeFile(srcFile)
-    # Write a page of NOP bytes so emulation has valid instructions to run.
-    var buf = newString(0x1000)
-    for i in 0 ..< 0x1000:
-      buf[i] = char(0x90'u8)
-    writeFile(srcFile, buf)
-    # Patch the first 4 bytes with NOPs and emulate from offset 0.
-    check testPatchInEmulator(srcFile, 0, @[0x90'u8, 0x90'u8, 0x90'u8,
-                                            0x90'u8], archX64, 4) == true
+    else:
+      let srcFile = "test_emu_nop.bin"
+      defer: removeFile(srcFile)
+      # Write a page of NOP bytes so emulation has valid instructions to run.
+      var buf = newString(0x1000)
+      for i in 0 ..< 0x1000:
+        buf[i] = char(0x90'u8)
+      writeFile(srcFile, buf)
+      # Patch the first 4 bytes with NOPs and emulate from offset 0.
+      check testPatchInEmulator(srcFile, 0, @[0x90'u8, 0x90'u8, 0x90'u8,
+                                              0x90'u8], archX64, 4) == true

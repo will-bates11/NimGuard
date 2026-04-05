@@ -1,0 +1,87 @@
+[+] Processing binary: /tmp/test_elf
+[+] Disassembly of .text section:
+    0x00000000000010A0  endbr64    
+    0x00000000000010A4  xor        ebp, ebp
+    0x00000000000010A6  mov        r9, rdx
+    0x00000000000010A9  pop        rsi
+    0x00000000000010AA  mov        rdx, rsp
+    0x00000000000010AD  and        rsp, 0xfffffffffffffff0
+    0x00000000000010B1  push       rax
+    0x00000000000010B2  push       rsp
+    0x00000000000010B3  xor        r8d, r8d
+    0x00000000000010B6  xor        ecx, ecx
+    0x00000000000010B8  lea        rdi, [rip + 0xca]
+    0x00000000000010BF  call       qword ptr [rip + 0x2f13]
+    0x00000000000010C5  hlt        
+    0x00000000000010C6  nop        word ptr cs:[rax + rax]
+    0x00000000000010D0  lea        rdi, [rip + 0x2f39]
+    0x00000000000010D7  lea        rax, [rip + 0x2f32]
+    0x00000000000010DE  cmp        rax, rdi
+    0x00000000000010E1  je         0x10f8
+    0x00000000000010E3  mov        rax, qword ptr [rip + 0x2ef6]
+    0x00000000000010EA  test       rax, rax
+    0x00000000000010ED  je         0x10f8
+    0x00000000000010EF  jmp        rax
+    0x00000000000010F1  nop        dword ptr [rax]
+    0x00000000000010F8  ret        
+    0x00000000000010F9  nop        dword ptr [rax]
+    0x0000000000001100  lea        rdi, [rip + 0x2f09]
+    0x0000000000001107  lea        rsi, [rip + 0x2f02]
+    0x000000000000110E  sub        rsi, rdi
+    0x0000000000001111  mov        rax, rsi
+    0x0000000000001114  shr        rsi, 0x3f
+    0x0000000000001118  sar        rax, 3
+    0x000000000000111C  add        rsi, rax
+    0x000000000000111F  sar        rsi, 1
+    0x0000000000001122  je         0x1138
+    0x0000000000001124  mov        rax, qword ptr [rip + 0x2ec5]
+    0x000000000000112B  test       rax, rax
+    0x000000000000112E  je         0x1138
+    0x0000000000001130  jmp        rax
+    0x0000000000001132  nop        word ptr [rax + rax]
+    0x0000000000001138  ret        
+    0x0000000000001139  nop        dword ptr [rax]
+    0x0000000000001140  endbr64    
+    0x0000000000001144  cmp        byte ptr [rip + 0x2ec5], 0
+    0x000000000000114B  jne        0x1178
+    0x000000000000114D  push       rbp
+    0x000000000000114E  cmp        qword ptr [rip + 0x2ea2], 0
+    0x0000000000001156  mov        rbp, rsp
+    0x0000000000001159  je         0x1167
+    0x000000000000115B  mov        rdi, qword ptr [rip + 0x2ea6]
+    0x0000000000001162  call       0x1060
+    0x0000000000001167  call       0x10d0
+    0x000000000000116C  mov        byte ptr [rip + 0x2e9d], 1
+    0x0000000000001173  pop        rbp
+    0x0000000000001174  ret        
+    0x0000000000001175  nop        dword ptr [rax]
+    0x0000000000001178  ret        
+    0x0000000000001179  nop        dword ptr [rax]
+    0x0000000000001180  endbr64    
+    0x0000000000001184  jmp        0x1100
+    0x0000000000001189  endbr64    
+    0x000000000000118D  push       rbp
+    0x000000000000118E  mov        rbp, rsp
+    0x0000000000001191  sub        rsp, 0x50
+    0x0000000000001195  mov        rax, qword ptr fs:[0x28]
+    0x000000000000119E  mov        qword ptr [rbp - 8], rax
+    0x00000000000011A2  xor        eax, eax
+    0x00000000000011A4  lea        rax, [rbp - 0x50]
+    0x00000000000011A8  mov        edx, 5
+    0x00000000000011AD  lea        rcx, [rip + 0xe50]
+    0x00000000000011B4  mov        rsi, rcx
+    0x00000000000011B7  mov        rdi, rax
+    0x00000000000011BA  call       0x1090
+    0x00000000000011BF  lea        rax, [rbp - 0x50]
+    0x00000000000011C3  mov        rsi, rax
+    0x00000000000011C6  lea        rax, [rip + 0xe3d]
+    0x00000000000011CD  mov        rdi, rax
+    0x00000000000011D0  mov        eax, 0
+    0x00000000000011D5  call       0x1080
+    0x00000000000011DA  mov        eax, 0
+    0x00000000000011DF  mov        rdx, qword ptr [rbp - 8]
+    0x00000000000011E3  sub        rdx, qword ptr fs:[0x28]
+    0x00000000000011EC  je         0x11f3
+    0x00000000000011EE  call       0x1070
+    0x00000000000011F3  leave      
+    0x00000000000011F4  ret        

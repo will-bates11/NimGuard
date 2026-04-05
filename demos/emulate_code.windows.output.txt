@@ -1,0 +1,20 @@
+$ demos\emulate_code.bat
+Emulating .text section of: C:\...\demos\test_binary.exe
+---------------------------------------
+[+] Processing binary: demos/test_binary.exe
+[+] Emulating .text section of demos/test_binary.exe
+[+] Emulating up to 256 instructions at 0x0000000000001000
+[-] Emulation stopped: uc_emu_start error code: 7
+
+Notes:
+  - Error code 7 is UC_ERR_WRITE_UNMAPPED: the emulator ran the first few
+    instructions of the .text section and then hit a write to an address that
+    has not been mapped (e.g., a write to the stack, which starts outside the
+    mapped region in a bare emulator context).
+  - This is expected for real-world binaries. The emulator is useful for
+    testing self-contained code sequences or for validating patched bytes
+    before writing them to disk (see --test-patch).
+  - The emulator runs successfully when the code region is genuinely
+    self-contained and does not reference external memory.
+
+Platform: Windows 11, nimguard.exe x64, unicorn 2.1.4

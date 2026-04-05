@@ -1,13 +1,14 @@
 # NimGuard - Dynamic Binary Patching & Instrumentation Tool
 
-version       = "0.6.0"
-author        = "William Bates"
-description   = "Dynamic binary patching and instrumentation tool for legacy systems."
+version       = "1.0.0"
+author        = "Will Bates"
+description   = "Binary patching and instrumentation tool for ELF and PE binaries."
 license       = "MIT"
 srcDir        = "src"
+bin           = @["nimguard"]
+binDir        = "."
 
-# Specify required Nim version
-requires "nim >= 1.6.0"
+requires "nim >= 2.0.0"
 
 # No external Nim packages are required. Capstone integration uses Nim FFI
 # (src/bindings/capstone.nim) to bind directly to the system-installed C library.
@@ -58,6 +59,6 @@ task test_windows, "Run Windows process and runtime tests":
   exec "nim c -r --path:src tests/test_winprocess.nim"
   exec "nim c -r --path:src tests/test_winruntime.nim"
 
-# Custom build task
-task build, "Compile NimGuard":
-  exec "nim c -d:release --path:src -o:nimguard src/main.nim"
+# Custom build task (also invokable as: nim c -d:release --path:src -o:nimguard src/nimguard.nim)
+task build, "Compile NimGuard with release optimizations":
+  exec "nim c -d:release --path:src -o:nimguard src/nimguard.nim"
