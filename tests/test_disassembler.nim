@@ -7,13 +7,6 @@
 import unittest, disassembler, binary
 
 # ---------------------------------------------------------------------------
-# Helper: skip a test when Capstone is not installed.
-# ---------------------------------------------------------------------------
-template requireCapstone() =
-  if not isCapstoneAvailable():
-    skip()
-
-# ---------------------------------------------------------------------------
 # Suite: Capstone availability probe
 # ---------------------------------------------------------------------------
 suite "Capstone Availability":
@@ -34,59 +27,71 @@ suite "disassembleBytes":
     check result.len == 0
 
   test "NOP byte (0x90) decodes as 'nop' on x64":
-    requireCapstone()
-    let data: seq[byte] = @[0x90'u8]
-    let instrs = disassembleBytes(data, 0x1000'u64, archX64)
-    check instrs.len == 1
-    check instrs[0].mnemonic == "nop"
-    check instrs[0].address  == 0x1000'u64
-    check instrs[0].rawBytes == @[0x90'u8]
+    if not isCapstoneAvailable():
+      skip()
+    else:
+      let data: seq[byte] = @[0x90'u8]
+      let instrs = disassembleBytes(data, 0x1000'u64, archX64)
+      check instrs.len == 1
+      check instrs[0].mnemonic == "nop"
+      check instrs[0].address  == 0x1000'u64
+      check instrs[0].rawBytes == @[0x90'u8]
 
   test "RET byte (0xC3) decodes as 'ret' on x64":
-    requireCapstone()
-    let data: seq[byte] = @[0xC3'u8]
-    let instrs = disassembleBytes(data, 0x2000'u64, archX64)
-    check instrs.len == 1
-    check instrs[0].mnemonic == "ret"
-    check instrs[0].address  == 0x2000'u64
+    if not isCapstoneAvailable():
+      skip()
+    else:
+      let data: seq[byte] = @[0xC3'u8]
+      let instrs = disassembleBytes(data, 0x2000'u64, archX64)
+      check instrs.len == 1
+      check instrs[0].mnemonic == "ret"
+      check instrs[0].address  == 0x2000'u64
 
   test "Function prologue bytes decode to push/mov on x64":
-    requireCapstone()
-    # 55           push rbp
-    # 48 89 E5     mov  rbp, rsp
-    let data: seq[byte] = @[0x55'u8, 0x48'u8, 0x89'u8, 0xE5'u8]
-    let instrs = disassembleBytes(data, 0x4000'u64, archX64)
-    check instrs.len == 2
-    check instrs[0].mnemonic == "push"
-    check instrs[0].address  == 0x4000'u64
-    check instrs[1].mnemonic == "mov"
-    check instrs[1].address  == 0x4001'u64
+    if not isCapstoneAvailable():
+      skip()
+    else:
+      # 55           push rbp
+      # 48 89 E5     mov  rbp, rsp
+      let data: seq[byte] = @[0x55'u8, 0x48'u8, 0x89'u8, 0xE5'u8]
+      let instrs = disassembleBytes(data, 0x4000'u64, archX64)
+      check instrs.len == 2
+      check instrs[0].mnemonic == "push"
+      check instrs[0].address  == 0x4000'u64
+      check instrs[1].mnemonic == "mov"
+      check instrs[1].address  == 0x4001'u64
 
   test "Multiple instructions have sequential addresses":
-    requireCapstone()
-    # 90 = nop (1 byte), C3 = ret (1 byte)
-    let data: seq[byte] = @[0x90'u8, 0xC3'u8]
-    let instrs = disassembleBytes(data, 0x5000'u64, archX64)
-    check instrs.len == 2
-    check instrs[0].address == 0x5000'u64
-    check instrs[1].address == 0x5001'u64
+    if not isCapstoneAvailable():
+      skip()
+    else:
+      # 90 = nop (1 byte), C3 = ret (1 byte)
+      let data: seq[byte] = @[0x90'u8, 0xC3'u8]
+      let instrs = disassembleBytes(data, 0x5000'u64, archX64)
+      check instrs.len == 2
+      check instrs[0].address == 0x5000'u64
+      check instrs[1].address == 0x5001'u64
 
   test "Invalid/garbage bytes return empty or partial result without crashing":
-    requireCapstone()
-    # 0xFF 0xFF is not a valid x64 instruction at this position; Capstone
-    # may decode it partially or return empty, but must not raise.
-    let data: seq[byte] = @[0xFF'u8, 0xFF'u8, 0xFF'u8, 0xFF'u8]
-    let instrs = disassembleBytes(data, 0'u64, archX64)
-    # We only check it did not crash; result may be empty or partial.
-    check instrs.len >= 0
+    if not isCapstoneAvailable():
+      skip()
+    else:
+      # 0xFF 0xFF is not a valid x64 instruction at this position; Capstone
+      # may decode it partially or return empty, but must not raise.
+      let data: seq[byte] = @[0xFF'u8, 0xFF'u8, 0xFF'u8, 0xFF'u8]
+      let instrs = disassembleBytes(data, 0'u64, archX64)
+      # We only check it did not crash; result may be empty or partial.
+      check instrs.len >= 0
 
   test "Base address is reflected in instruction addresses":
-    requireCapstone()
-    let data: seq[byte] = @[0x90'u8]
-    let base = 0xDEAD0000'u64
-    let instrs = disassembleBytes(data, base, archX64)
-    check instrs.len == 1
-    check instrs[0].address == base
+    if not isCapstoneAvailable():
+      skip()
+    else:
+      let data: seq[byte] = @[0x90'u8]
+      let base = 0xDEAD0000'u64
+      let instrs = disassembleBytes(data, base, archX64)
+      check instrs.len == 1
+      check instrs[0].address == base
 
 # ---------------------------------------------------------------------------
 # Suite: disassembleSection (pure-Nim paths that do not need Capstone)

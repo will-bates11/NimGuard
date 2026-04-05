@@ -13,7 +13,7 @@ suite "Runtime Module - Platform":
 
   test "attachProcess returns failure on non-Linux":
     when not defined(linux):
-      let r = attachProcess(1)
+      let r = runtime.attachProcess(1)
       check r.success == false
     else:
       # On Linux this would actually attach; skip the negative test.
@@ -21,31 +21,31 @@ suite "Runtime Module - Platform":
 
   test "detachProcess returns failure on non-Linux":
     when not defined(linux):
-      let r = detachProcess(1)
+      let r = runtime.detachProcess(1)
       check r.success == false
     else:
       check true
 
   test "patchProcessMemory returns failure for empty bytes on all platforms":
-    let r = patchProcessMemory(1, 0x1000'u64, @[])
+    let r = runtime.patchProcessMemory(1, 0x1000'u64, @[])
     check r.success == false
 
   test "injectBreakpoint returns failure on non-Linux":
     when not defined(linux):
-      let (_, r) = injectBreakpoint(1, 0x1000'u64)
+      let (_, r) = runtime.injectBreakpoint(1, 0x1000'u64)
       check r.success == false
     else:
       check true
 
   test "monitorSyscalls returns empty seq on non-Linux":
     when not defined(linux):
-      let events = monitorSyscalls(1, 5)
+      let events = runtime.monitorSyscalls(1, 5)
       check events.len == 0
     else:
       check true
 
   test "disassembleAtAddress returns empty seq for zero count":
-    let instrs = disassembleAtAddress(1, 0x1000'u64, 0)
+    let instrs = runtime.disassembleAtAddress(1, 0x1000'u64, 0)
     check instrs.len == 0
 
 # ---------------------------------------------------------------------------
