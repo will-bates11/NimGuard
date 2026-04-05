@@ -22,7 +22,7 @@ var hooks: seq[InstrumentationHook]
 
 # Pairs each live breakpoint record with its associated hook so the monitor
 # loop can look up the hook when a breakpoint fires.
-var activeBreakpoints: seq[(Breakpoint, InstrumentationHook)]
+var activeBreakpoints: seq[(runtime.Breakpoint, InstrumentationHook)]
 
 # Log a detected function call (used as breakpoint callback).
 proc monitorFunctionCall(functionName: string) =
