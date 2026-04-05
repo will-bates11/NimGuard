@@ -1,2 +1,17 @@
 [+] Processing binary: /tmp/test_elf
-[-] Unicorn library not available. Install libunicorn-dev to enable emulation.
+[+] Emulating .text section of /tmp/test_elf
+[+] Emulating up to 256 instructions at 0x00000000000010A0
+[-] Emulation stopped: uc_emu_start error code: 6
+
+Notes:
+  - Error code 6 is UC_ERR_READ_UNMAPPED: the emulator ran the first few
+    instructions of the .text section and then hit a read from an address
+    that has not been mapped. RSP is zero by default in a bare emulator
+    context, so the first 'pop' instruction faults immediately.
+  - This is expected for real-world binaries. The emulator is useful for
+    testing self-contained code sequences or for validating patched bytes
+    before writing them to disk (see --test-patch).
+  - The emulator runs successfully when the code region is genuinely
+    self-contained and does not reference external memory.
+
+Platform: Ubuntu 22.04, nimguard x64, libunicorn2 (2.0.0)
