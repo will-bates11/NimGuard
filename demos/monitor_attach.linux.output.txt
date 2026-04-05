@@ -1,0 +1,12 @@
+wbate@host:~$ /tmp/traceable_sleep &
+[1] 3819
+wbate@host:~$ ./nimguard_linux --monitor --attach 3819 demos/test_binary
+[+] Attaching to PID 3819...
+[+] Attached.
+[+] Setting up breakpoint hooks for: demos/test_binary
+[+] Setting up hooks for: demos/test_binary
+[!] 'memmove' detected in import table (no CALL site in .text)
+[!] 'memcpy' detected in import table (no CALL site in .text)
+[+] Runtime instrumentation setup complete.
+[!] No breakpoints injected (no dangerous CALL sites found or Capstone unavailable).
+[+] Detached from PID 3819

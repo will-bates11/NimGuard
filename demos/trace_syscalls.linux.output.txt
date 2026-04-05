@@ -1,0 +1,8 @@
+wbate@host:~$ /tmp/traceable_sleep &
+[1] 3823
+wbate@host:~$ ./nimguard_linux --trace --attach 3823 --trace-timeout 3000 --trace-max 20
+[+] Attaching to PID 3823...
+[+] Attached.
+[+] Tracing syscalls (max 20 events, timeout 3000ms)...
+    syscall 219  args=[0000000000000000, 0000000000000000, ...]
+[-] Detach failed: ptrace detach failed: pid=3823

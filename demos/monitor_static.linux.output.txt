@@ -1,0 +1,8 @@
+wbate@host:/mnt/c/Users/wbate/OneDrive/Desktop/Projects/NimGuard/.claude/worktrees/bold-swanson$ ./nimguard_linux --monitor demos/test_binary
+[+] Processing binary: demos/test_binary
+[+] Enabling runtime monitoring...
+[+] Setting up hooks for: demos/test_binary
+[+] Would hook: memmove (import, no CALL site found; use --attach <pid> for live monitoring)
+[+] Would hook: memcpy (import, no CALL site found; use --attach <pid> for live monitoring)
+[+] Runtime instrumentation setup complete.
+[+] Static analysis complete. Use --attach <pid> to monitor a running process.

@@ -1,0 +1,8 @@
+C:\Users\wbate\OneDrive\Desktop\Projects\NimGuard\.claude\worktrees\bold-swanson> nimguard.exe --monitor demos\test_binary.exe
+[+] Processing binary: demos/test_binary.exe
+[+] Enabling runtime monitoring...
+[+] Setting up hooks for: demos/test_binary.exe
+[+] Would hook: memcpy (import, no CALL site found; use --attach <pid> for live monitoring)
+[+] Would hook: memmove (import, no CALL site found; use --attach <pid> for live monitoring)
+[+] Runtime instrumentation setup complete.
+[+] Static analysis complete. Use --attach <pid> to monitor a running process.

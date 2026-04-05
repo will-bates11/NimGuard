@@ -1,0 +1,9 @@
+wbate@host:~$ /tmp/traceable_sleep &
+[1] 3843
+wbate@host:~$ BASE=$(cat /proc/3843/maps | head -1 | cut -d'-' -f1)
+wbate@host:~$ ./nimguard_linux --inject 0x${BASE}:9090 --attach 3843
+[+] Attaching to PID 3843...
+[+] Attached.
+[+] Injecting 2 byte(s) at 0x0000607156BD7000
+[+] Memory patched.
+[+] Detached from PID 3843

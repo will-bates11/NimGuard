@@ -1,0 +1,6 @@
+C:\Users\wbate\OneDrive\Desktop\Projects\NimGuard\.claude\worktrees\bold-swanson> nimguard.exe --trace --attach 31332 --trace-timeout 3000 --trace-max 20
+[+] Attaching to PID 31332...
+[+] Attached.
+[+] Tracing syscalls (max 20 events, timeout 3000ms)...
+    (no syscall events captured)
+[+] Detached from PID 31332
