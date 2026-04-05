@@ -215,10 +215,10 @@ Patch rules are JSON:
 {
   "rules": [
     {
-      "identifier": "auth_bypass",
-      "description": "Bypass authentication check",
-      "condition": "if function login() is called",
-      "patch": "mov eax, 1; ret"
+      "identifier": "disable_gets",
+      "description": "Replace unsafe gets() with an immediate return, preventing unbounded input reads",
+      "condition": "if gets is detected in the import table",
+      "patch": "xor eax, eax; ret"
     }
   ]
 }
