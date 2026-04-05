@@ -1,0 +1,4 @@
+Emulating .text section of: /mnt/c/Users/wbate/OneDrive/Desktop/Projects/NimGuard/demos/test_binary
+---------------------------------------
+[+] Processing binary: /mnt/c/Users/wbate/OneDrive/Desktop/Projects/NimGuard/demos/test_binary
+[-] Unicorn library not available. Install libunicorn-dev to enable emulation.
