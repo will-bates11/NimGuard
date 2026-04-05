@@ -1,0 +1,33 @@
+$ demos\analyze_binary.bat
+Analyzing: C:\...\demos\test_binary.exe
+---------------------------------------
+[+] Processing binary: demos/test_binary.exe
+[+] Running analysis on demos/test_binary.exe
+[+] Format:       PE
+[+] Architecture: x64
+[+] Entry point:  0x0000000000001046
+[+] Sections (19):
+    .text        vaddr=0x0000000000001000 offset=0x00000600 size=0x0001E800 [r-x]
+    .data        vaddr=0x0000000000020000 offset=0x0001EE00 size=0x00000400 [rw-]
+    .rdata       vaddr=0x0000000000021000 offset=0x0001F200 size=0x00001400 [r--]
+    /4           vaddr=0x0000000000023000 offset=0x00020600 size=0x00000200 [rw-]
+    .pdata       vaddr=0x0000000000024000 offset=0x00020800 size=0x00001A00 [r--]
+    .xdata       vaddr=0x0000000000026000 offset=0x00022200 size=0x00001800 [r--]
+    .bss         vaddr=0x0000000000028000 offset=0x00000000 size=0x00000000 [rw-]
+    .idata       vaddr=0x0000000000029000 offset=0x00023A00 size=0x00001400 [r--]
+    .tls         vaddr=0x000000000002B000 offset=0x00024E00 size=0x00000200 [rw-]
+    .reloc       vaddr=0x000000000002C000 offset=0x00025000 size=0x00000200 [r--]
+    /14          vaddr=0x000000000002D000 offset=0x00025200 size=0x00000200 [r--]
+    /29          vaddr=0x000000000002E000 offset=0x00025400 size=0x00002E00 [r--]
+    /41          vaddr=0x0000000000031000 offset=0x00028200 size=0x00000600 [r--]
+    /55          vaddr=0x0000000000032000 offset=0x00028800 size=0x00000600 [r--]
+    /67          vaddr=0x0000000000033000 offset=0x00028E00 size=0x00000200 [r--]
+    /80          vaddr=0x0000000000034000 offset=0x00029000 size=0x00000200 [r--]
+    /91          vaddr=0x0000000000035000 offset=0x00029200 size=0x00000400 [r--]
+    /107         vaddr=0x0000000000036000 offset=0x00029600 size=0x00000400 [r--]
+    /123         vaddr=0x0000000000037000 offset=0x00029A00 size=0x00000200 [r--]
+[+] Dangerous calls (2):
+    [!] memcpy
+    [!] memmove
+
+Platform: Windows 11, nimguard.exe x64, capstone 5.0.7

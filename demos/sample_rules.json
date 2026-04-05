@@ -1,0 +1,34 @@
+{
+  "rules": [
+    {
+      "identifier": "memcpy",
+      "description": "Replace unsafe memcpy calls with a stub that returns immediately. In a real hardening scenario you would redirect to a bounds-checked wrapper instead.",
+      "condition": "if memcpy is detected in the import table",
+      "patch": "mov eax, 0; ret"
+    },
+    {
+      "identifier": "memmove",
+      "description": "Replace memmove calls with a no-op stub. Demonstrates patching a second dangerous import in the same pass.",
+      "condition": "if memmove is detected in the import table",
+      "patch": "xor eax, eax; ret"
+    },
+    {
+      "identifier": "strcpy",
+      "description": "Replace strcpy with a stub that returns null, preventing unbounded string copies.",
+      "condition": "if strcpy is detected in the import table",
+      "patch": "xor eax, eax; ret"
+    },
+    {
+      "identifier": "sprintf",
+      "description": "Replace sprintf with a stub that returns -1, flagging it as disabled.",
+      "condition": "if sprintf is detected in the import table",
+      "patch": "mov eax, 0xffffffff; ret"
+    },
+    {
+      "identifier": "gets",
+      "description": "Replace gets with an immediate return. gets has no safe upper bound on input length.",
+      "condition": "if gets is detected in the import table",
+      "patch": "xor eax, eax; ret"
+    }
+  ]
+}

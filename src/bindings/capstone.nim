@@ -38,12 +38,14 @@ const
 type CsHandle* = csize_t
 
 # cs_insn: instruction information struct, matching the C layout exactly.
+# Capstone 5.x increased MAX_INSN_SIZE from 16 to 24; bytes must be 24 here
+# or the struct will be misaligned and mnemonic/opStr will contain garbage.
 type
   CsInsn* = object
     id*:       cuint
     address*:  uint64
     size*:     uint16
-    bytes*:    array[16, byte]
+    bytes*:    array[24, byte]
     mnemonic*: array[32, char]
     opStr*:    array[160, char]
     detail*:   pointer

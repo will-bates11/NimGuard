@@ -30,3 +30,18 @@ test_rules.json
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Demo build artifacts and downloaded archives
+build_capstone/
+build_unicorn/
+*.zip
+*.7z
+*.exe.bak
+capstone_installer.exe
+capstone_whl/
+unicorn_whl/
+keystone_extracted/
+demos/test_binary
+demos/test_binary.exe
+demos/test_binary_patched
+demos/test_binary_patched.exe

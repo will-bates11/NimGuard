@@ -82,7 +82,7 @@ proc disassembleBytes*(data: seq[byte], baseAddr: uint64,
     let insn = raw[i]
 
     var rawBytes: seq[byte]
-    for j in 0 ..< int(insn.size):
+    for j in 0 ..< min(int(insn.size), insn.bytes.len):
       rawBytes.add(insn.bytes[j])
 
     result.add(Instruction(
