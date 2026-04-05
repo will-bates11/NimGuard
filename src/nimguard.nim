@@ -111,7 +111,21 @@ proc printEmulation(binaryPath: string) =
   if res.success:
     echo "[+] Emulation completed successfully"
   else:
-    echo "[-] Emulation stopped: ", res.errorMsg
+    # Translate common Unicorn error codes to human-readable descriptions.
+    let desc = case res.errorMsg
+      of "uc_emu_start error code: 6":
+        res.errorMsg & " (UC_ERR_FETCH_UNMAPPED: instruction fetch from unmapped memory)"
+      of "uc_emu_start error code: 7":
+        res.errorMsg & " (UC_ERR_FETCH_PROT: instruction fetch blocked by page protection)"
+      of "uc_emu_start error code: 11":
+        res.errorMsg & " (UC_ERR_READ_UNMAPPED: memory read from unmapped address)"
+      of "uc_emu_start error code: 12":
+        res.errorMsg & " (UC_ERR_WRITE_UNMAPPED: memory write to unmapped address)"
+      else:
+        res.errorMsg
+    echo "[-] Emulation stopped: ", desc
+    echo "[!] Note: partial emulation without a full address space is expected to"
+    echo "    halt when code references memory outside the mapped .text region."
 
 proc printDisassembly(binaryPath: string) =
   let info = parseBinary(binaryPath)

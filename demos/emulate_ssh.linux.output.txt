@@ -1,4 +1,6 @@
 [+] Processing binary: /usr/bin/ssh
 [+] Emulating .text section of /usr/bin/ssh
 [+] Emulating up to 256 instructions at 0x000000000000DF10
-[-] Emulation stopped: uc_emu_start error code: 6
+[-] Emulation stopped: uc_emu_start error code: 6 (UC_ERR_FETCH_UNMAPPED: instruction fetch from unmapped memory)
+[!] Note: partial emulation without a full address space is expected to
+    halt when code references memory outside the mapped .text region.
