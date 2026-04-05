@@ -30,4 +30,4 @@ Analyzing: C:\...\demos\test_binary.exe
     [!] memcpy
     [!] memmove
 
-Platform: Windows 11, nimguard.exe x64, capstone 4.0.2
+Platform: Windows 11, nimguard.exe x64
